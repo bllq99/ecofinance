@@ -26,7 +26,7 @@ Primero, clona el repositorio en tu máquina local:
 
 ```bash
 git clone https://github.com/bllq99/ecofinance.git
-cd finanzas-personales
+cd ecofinance
 ```
 
 ## Crear y activar un entorno virtual
