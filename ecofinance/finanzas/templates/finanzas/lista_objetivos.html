@@ -1,0 +1,39 @@
+{% extends 'finanzas/base.html' %}
+
+{% block title %}Objetivos de Ahorro{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Objetivos de Ahorro</h1>
+
+<a href="{% url 'nuevo_objetivo' %}" class="btn btn-success mb-3">➕ Nuevo Objetivo</a>
+
+{% if objetivos %}
+<div class="row">
+    {% for objetivo in objetivos %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">{{ objetivo.nombre }}</div>
+            <div class="card-body">
+                <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo }}</strong></p>
+                <p>Monto actual: <strong>${{ objetivo.monto_actual }}</strong></p>
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar"
+                         style="width: {{ objetivo.progreso }}%;"
+                         aria-valuenow="{{ objetivo.monto_actual }}"
+                         aria-valuemin="0"
+                         aria-valuemax="{{ objetivo.monto_objetivo }}">
+                        {{ objetivo.progreso }}%
+                    </div>
+                </div>
+                {% if objetivo.fecha_limite %}
+                <p class="mt-2 text-muted">Fecha límite: {{ objetivo.fecha_limite }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+    <p>No hay objetivos de ahorro registrados.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'finanzas/base.html' %}
+
+{% block title %}Nueva Transacción{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Registrar Nueva Transacción</h1>
+
+<form method="post" class="card p-4 bg-white shadow-sm">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a href="{% url 'lista_transacciones' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

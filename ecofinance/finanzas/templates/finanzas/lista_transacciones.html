@@ -1,0 +1,41 @@
+{% extends 'finanzas/base.html' %}
+
+{% block title %}Transacciones{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Transacciones</h1>
+
+<a href="{% url 'nueva_transaccion' %}" class="btn btn-success mb-3">➕ Nueva Transacción</a>
+
+{% if transacciones %}
+<table class="table table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Fecha</th>
+            <th>Descripción</th>
+            <th>Tipo</th>
+            <th>Monto</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for transaccion in transacciones %}
+        <tr>
+            <td>{{ transaccion.fecha|date:"d/m/Y H:i" }}</td>
+            <td>{{ transaccion.descripcion }}</td>
+            <td>
+                {% if transaccion.tipo == "INGRESO" %}
+                    <span class="badge bg-success">Ingreso</span>
+                {% else %}
+                    <span class="badge bg-danger">Gasto</span>
+                {% endif %}
+            </td>
+            <td>${{ transaccion.monto }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+    <p>No hay transacciones registradas.</p>
+{% endif %}
+
+{% endblock %}

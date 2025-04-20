@@ -1,0 +1,71 @@
+{% extends 'finanzas/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Dashboard</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-bg-success mb-3">
+            <div class="card-header">Ingresos</div>
+            <div class="card-body">
+                <h5 class="card-title">${{ ingresos }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-bg-danger mb-3">
+            <div class="card-header">Gastos</div>
+            <div class="card-body">
+                <h5 class="card-title">${{ gastos }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-bg-primary mb-3">
+            <div class="card-header">Balance</div>
+            <div class="card-body">
+                <h5 class="card-title">${{ balance }}</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2 class="mt-5 mb-3">Objetivos de Ahorro</h2>
+
+{% if objetivos %}
+    <div class="row">
+        {% for objetivo in objetivos %}
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">{{ objetivo.nombre }}</div>
+                    <div class="card-body">
+                        <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo }}</strong></p>
+                        <p>Monto actual: <strong>${{ objetivo.monto_actual }}</strong></p>
+                        <div class="progress">
+                            {% with progreso=objetivo.monto_actual|divisibleby:objetivo.monto_objetivo %}
+                            {% endwith %}
+                            <div class="progress-bar" role="progressbar"
+                                style="width: {{ objetivo.monto_actual|floatformat:2|divisibleby:objetivo.monto_objetivo|floatformat:0 }}%;"
+                                aria-valuenow="{{ objetivo.monto_actual }}"
+                                aria-valuemin="0"
+                                aria-valuemax="{{ objetivo.monto_objetivo }}">
+                                {{ objetivo.monto_actual|floatformat:2 }} / {{ objetivo.monto_objetivo|floatformat:2 }}
+                            </div>
+                        </div>
+                        {% if objetivo.fecha_limite %}
+                            <p class="mt-2 text-muted">Fecha límite: {{ objetivo.fecha_limite }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>No hay objetivos de ahorro registrados.</p>
+{% endif %}
+
+<a class="btn btn-outline-primary mt-4" href="{% url 'nuevo_objetivo' %}">➕ Nuevo Objetivo</a>
+
+{% endblock %}

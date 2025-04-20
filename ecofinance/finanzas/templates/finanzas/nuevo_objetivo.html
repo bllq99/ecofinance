@@ -1,0 +1,15 @@
+{% extends 'finanzas/base.html' %}
+
+{% block title %}Nuevo Objetivo{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Crear Nuevo Objetivo de Ahorro</h1>
+
+<form method="post" class="card p-4 bg-white shadow-sm">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a href="{% url 'lista_objetivos' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}
