@@ -80,5 +80,5 @@ Una vez configurada la base de datos, ejecuta las migraciones para crear las tab
 Finalmente, ejecuta el servidor de desarrollo:
 
 ```bash
-    python manage.py migrate
+    python manage.py runserver
 ```
