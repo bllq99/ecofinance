@@ -1,5 +1,5 @@
 {% extends 'finanzas/base.html' %}
-
+{% load custom_filters %}
 {% block title %}Transacciones{% endblock %}
 
 {% block content %}
@@ -25,8 +25,8 @@
                             <div class="d-flex align-items-center justify-content-between w-100">
                                 <span class="fs-5 fw-semibold">{{ mes_data.nombre }}</span>
                                 <div class="d-flex">
-                                    <span class="badge bg-success me-2">+${{ mes_data.total_ingresos|floatformat:2 }}</span>
-                                    <span class="badge bg-danger">-${{ mes_data.total_gastos|floatformat:2 }}</span>
+                                    <span class="badge bg-success me-2">+{{ mes_data.total_ingresos|formato_clp }}</span>
+                                    <span class="badge bg-danger">-{{ mes_data.total_gastos|formato_clp }}</span>
                                 </div>
                             </div>
                         </button>
@@ -74,9 +74,9 @@
                                             </td>
                                             <td class="text-end pe-3">
                                                 {% if transaccion.tipo == "INGRESO" %}
-                                                    <span class="text-success fw-bold">+${{ transaccion.monto }}</span>
+                                                    <span class="text-success fw-bold">+{{ transaccion.monto|formato_clp }}</span>
                                                 {% else %}
-                                                    <span class="text-danger fw-bold">-${{ transaccion.monto }}</span>
+                                                    <span class="text-danger fw-bold">-{{ transaccion.monto|formato_clp }}</span>
                                                 {% endif %}
                                             </td>
                                         </tr>
