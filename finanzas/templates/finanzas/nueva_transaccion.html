@@ -3,40 +3,100 @@
 {% block title %}Nueva Transacción{% endblock %}
 
 {% block content %}
-<h1 class="mb-4 text-center">Registrar Nueva Transacción</h1>
-
-<div class="container">
+<div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-6 col-md-8 col-sm-12">
-            <form method="post" class="card p-4 bg-light shadow-sm">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <label for="tipo" class="form-label">Tipo de Transacción</label>
-                    <select id="tipo" name="tipo" class="form-select" required>
-                        <option value="" disabled selected>Seleccione el tipo</option>
-                        <option value="ingreso">Ingreso</option>
-                        <option value="gasto">Gasto</option>
-                    </select>
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0">Nueva Transacción</h4>
                 </div>
-                <div class="mb-3">
-                    <label for="categoria" class="form-label">Categoría</label>
-                    <select id="categoria" name="categoria" class="form-select" required>
-                        <option value="" disabled selected>Seleccione una categoría</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="monto" class="form-label">Monto</label>
-                    <input type="number" id="monto" name="monto" class="form-control" placeholder="Ingrese el monto" required>
-                </div>
-                <div class="mb-3">
-                    <label for="descripcion" class="form-label">Descripción</label>
-                    <textarea id="descripcion" name="descripcion" class="form-control" rows="3" placeholder="Ingrese una descripción" style="resize: none;"></textarea>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <a href="{% url 'lista_transacciones' %}" class="btn btn-secondary w-45">Cancelar</a>
-                    <button type="submit" class="btn btn-primary w-45">Guardar</button>
-                </div>
-            </form>
+                <form method="post" class="card-body p-4">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <div class="form-floating">
+                            <select id="tipo" name="tipo" class="form-select" required>
+                                <option value="" disabled selected>Seleccione</option>
+                                <option value="ingreso">Ingreso</option>
+                                <option value="gasto">Gasto</option>
+                            </select>
+                            <label for="tipo">Tipo de Transacción</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-floating">
+                            <select id="categoria" name="categoria" class="form-select" required>
+                                <option value="" disabled selected>Primero seleccione un tipo</option>
+                            </select>
+                            <label for="categoria">Categoría</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="esFijo" name="esFijo">
+                            <label class="form-check-label" for="esFijo">¿Es un ingreso/gasto recurrente?</label>
+                        </div>
+                        <small id="recurrenteHelp" class="form-text text-muted d-none">
+                            Al marcar esta opción se crearán automáticamente transacciones futuras según la periodicidad seleccionada.
+                        </small>
+                    </div>
+                    
+                    <!-- Sección para transacciones recurrentes (inicialmente oculta) -->
+                    <div id="seccionRecurrente" class="mb-4 border p-3 rounded d-none animate__animated animate__fadeIn">
+                        <div class="mb-3">
+                            <label for="periodicidad" class="form-label">Periodicidad</label>
+                            <select id="periodicidad" name="periodicidad" class="form-select">
+                                <option value="diario">Diario</option>
+                                <option value="semanal">Semanal</option>
+                                <option value="quincenal">Quincenal</option>
+                                <option value="mensual" selected>Mensual</option>
+                                <option value="semestral">Semestral</option>
+                                <option value="anual">Anual</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fechaInicio" class="form-label">Fecha de inicio</label>
+                            <input type="date" id="fechaInicio" name="fechaInicio" class="form-control" 
+                                   value="{% now 'Y-m-d' %}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="fechaFin" class="form-label">Fecha de finalización (opcional)</label>
+                            <input type="date" id="fechaFin" name="fechaFin" class="form-control">
+                        </div>
+                        <div id="advertenciaDiaria" class="alert alert-warning d-none">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <small>
+                                Para transacciones diarias, se crearán automáticamente hasta un máximo de 90 días para evitar sobrecargar el sistema.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-floating">
+                            <input type="number" id="monto" name="monto" class="form-control" placeholder="0.00" min="0" step="0.01" required>
+                            <label for="monto">Monto</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-floating">
+                            <textarea id="descripcion" name="descripcion" class="form-control" placeholder="Descripción" style="resize: none; height: 100px;"></textarea>
+                            <label for="descripcion">Descripción</label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-4">
+                        <a href="{% url 'lista_transacciones' %}" class="btn btn-outline-secondary px-4 py-2">
+                            <i class="fas fa-arrow-left me-2"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 py-2">
+                            <i class="fas fa-save me-2"></i>Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -53,12 +113,25 @@
         { value: "alimentacion", text: "Alimentación" },
         { value: "transporte", text: "Transporte" },
         { value: "entretenimiento", text: "Entretenimiento" },
+        { value: "salud", text: "Salud" },
+        { value: "vivienda", text: "Vivienda" },
+        { value: "educacion", text: "Educación" },
+        { value: "ropa", text: "Ropa" },
+        { value: "ahorro", text: "Ahorro" },
+        { value: "deudas", text: "Deudas" },
+        { value: "impuestos", text: "Impuestos" },
+        { value: "seguros", text: "Seguros" },
+        { value: "regalos", text: "Regalos" },
         { value: "otros_gastos", text: "Otros Gastos" }
     ];
 
     // Referencias a los elementos del formulario
     const tipoSelect = document.getElementById("tipo");
     const categoriaSelect = document.getElementById("categoria");
+    const esFijoCheck = document.getElementById("esFijo");
+    const seccionRecurrente = document.getElementById("seccionRecurrente");
+    const periodicidadSelect = document.getElementById("periodicidad");
+    const advertenciaDiaria = document.getElementById("advertenciaDiaria");
 
     // Actualizar las categorías según el tipo seleccionado
     tipoSelect.addEventListener("change", function () {
@@ -75,6 +148,49 @@
             option.textContent = categoria.text;
             categoriaSelect.appendChild(option);
         });
+        
+        // Actualizar etiqueta del switch según el tipo seleccionado
+        esFijoCheck.nextElementSibling.textContent = `¿Es un ${this.value === "ingreso" ? "ingreso" : "gasto"} recurrente?`;
+        
+        // Añadir animación sutil
+        categoriaSelect.classList.add('animate__animated', 'animate__fadeIn');
+        setTimeout(() => {
+            categoriaSelect.classList.remove('animate__animated', 'animate__fadeIn');
+        }, 1000);
+    });
+    
+    // Mostrar/ocultar la sección de configuración de recurrencia
+    esFijoCheck.addEventListener("change", function() {
+        const helperText = document.getElementById("recurrenteHelp");
+        if (this.checked) {
+            seccionRecurrente.classList.remove("d-none");
+            helperText.classList.remove("d-none");
+            
+            // Verificar si está seleccionada la opción diaria
+            if (periodicidadSelect.value === "diario") {
+                advertenciaDiaria.classList.remove("d-none");
+            }
+        } else {
+            seccionRecurrente.classList.add("d-none");
+            helperText.classList.add("d-none");
+            advertenciaDiaria.classList.add("d-none");
+        }
+    });
+    
+    // Mostrar advertencia si se selecciona periodicidad diaria
+    periodicidadSelect.addEventListener("change", function() {
+        if (this.value === "diario") {
+            advertenciaDiaria.classList.remove("d-none");
+        } else {
+            advertenciaDiaria.classList.add("d-none");
+        }
+    });
+    
+    // Establecer la fecha actual como valor predeterminado para la fecha de inicio
+    document.addEventListener("DOMContentLoaded", function() {
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0];
+        document.getElementById("fechaInicio").value = formattedDate;
     });
 </script>
 {% endblock %}

@@ -1,10 +1,14 @@
 from django.shortcuts import render, redirect
-from .models import Transaccion, ObjetivoAhorro, Presupuesto
+from .models import Transaccion, ObjetivoAhorro, Presupuesto, SerieRecurrente
 from .forms import TransaccionForm, ObjetivoForm, PresupuestoForm
 from django.db.models import Sum
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.contrib.auth.models import User
+from datetime import datetime
+from django.utils import timezone
+from itertools import groupby
+from django.utils.timezone import localtime
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
@@ -30,25 +34,107 @@ def dashboard(request):
 
 # 📄 Lista de transacciones
 def lista_transacciones(request):
-    transacciones = Transaccion.objects.all().order_by('-fecha')
+    # Obtener fecha actual
+    fecha_actual = timezone.now().date()
+    
+    # Obtener solo transacciones hasta la fecha actual (excluir futuras)
+    transacciones = Transaccion.objects.filter(fecha__lte=fecha_actual).order_by('-fecha')
+    
+    # Crear un diccionario para agrupar transacciones por mes
+    transacciones_por_mes = {}
+    
+    for transaccion in transacciones:
+        # Crear clave de año-mes (por ejemplo: "2025-05")
+        mes_clave = transaccion.fecha.strftime('%Y-%m')
+        
+        # Crear entrada para el mes si no existe
+        if mes_clave not in transacciones_por_mes:
+            # Formatear el nombre del mes para mostrar (por ejemplo: "Mayo 2025")
+            nombre_mes = transaccion.fecha.strftime('%B %Y').capitalize()
+            transacciones_por_mes[mes_clave] = {
+                'nombre': nombre_mes,
+                'transacciones': [],
+                'total_ingresos': 0,
+                'total_gastos': 0
+            }
+        
+        # Agregar la transacción al mes correspondiente
+        transacciones_por_mes[mes_clave]['transacciones'].append(transaccion)
+        
+        # Actualizar totales
+        if transaccion.tipo == 'INGRESO':
+            transacciones_por_mes[mes_clave]['total_ingresos'] += float(transaccion.monto)
+        else:
+            transacciones_por_mes[mes_clave]['total_gastos'] += float(transaccion.monto)
+    
+    # Convertir el diccionario a una lista ordenada por mes (más reciente primero)
+    meses = sorted(transacciones_por_mes.items(), key=lambda x: x[0], reverse=True)
+    
     return render(request, 'finanzas/lista_transacciones.html', {
-        'transacciones': transacciones,
+        'meses': meses,
     })
 
 
 # ➕ Crear nueva transacción
 def nueva_transaccion(request):
     if request.method == 'POST':
-        form = TransaccionForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('lista_transacciones')
-    else:
-        form = TransaccionForm()
-
-    return render(request, 'finanzas/nueva_transaccion.html', {
-        'form': form
-    })
+        # Obtener datos del formulario
+        tipo = request.POST.get('tipo')
+        categoria = request.POST.get('categoria')
+        descripcion = request.POST.get('descripcion')
+        monto = request.POST.get('monto')
+        es_recurrente = 'esFijo' in request.POST
+        
+        # Si es recurrente, usar la fecha de inicio como fecha de la transacción original
+        if es_recurrente:
+            periodicidad = request.POST.get('periodicidad')
+            fecha_inicio_str = request.POST.get('fechaInicio')
+            fecha_fin_str = request.POST.get('fechaFin') or None
+            
+            # Convertir strings a objetos fecha
+            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date() if fecha_inicio_str else timezone.now().date()
+            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date() if fecha_fin_str else None
+            
+            # Crear la transacción con la fecha de inicio como la fecha de la transacción
+            nueva_transaccion = Transaccion(
+                tipo=tipo.upper(),
+                categoria=categoria,
+                descripcion=descripcion,
+                monto=monto,
+                fecha=fecha_inicio,  # Usar la fecha de inicio en lugar de now()
+                es_recurrente=es_recurrente,
+                periodicidad=periodicidad,
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin
+            )
+            
+            # Crear la serie recurrente
+            serie = SerieRecurrente.objects.create()
+            nueva_transaccion.serie_recurrente = serie
+            
+            # Guardar la transacción base
+            nueva_transaccion.save()
+            
+            # Generar las transacciones programadas
+            serie.generar_transacciones_programadas(nueva_transaccion)
+            
+            messages.success(request, f'Transacción recurrente creada correctamente. Se han programado las repeticiones según la periodicidad seleccionada.')
+        else:
+            # Para transacciones no recurrentes, usar la fecha actual
+            nueva_transaccion = Transaccion(
+                tipo=tipo.upper(),
+                categoria=categoria,
+                descripcion=descripcion,
+                monto=monto,
+                fecha=timezone.now(),
+                es_recurrente=False
+            )
+            nueva_transaccion.save()
+            messages.success(request, 'Transacción creada correctamente.')
+        
+        return redirect('lista_transacciones')
+        
+    return render(request, 'finanzas/nueva_transaccion.html')
 
 
 # 📄 Lista de objetivos de ahorro
