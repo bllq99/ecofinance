@@ -3,13 +3,78 @@
 {% block title %}Nueva Transacción{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Registrar Nueva Transacción</h1>
+<h1 class="mb-4 text-center">Registrar Nueva Transacción</h1>
 
-<form method="post" class="card p-4 bg-white shadow-sm">
-    {% csrf_token %}
-    {{ form.as_p }}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8 col-sm-12">
+            <form method="post" class="card p-4 bg-light shadow-sm">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="tipo" class="form-label">Tipo de Transacción</label>
+                    <select id="tipo" name="tipo" class="form-select" required>
+                        <option value="" disabled selected>Seleccione el tipo</option>
+                        <option value="ingreso">Ingreso</option>
+                        <option value="gasto">Gasto</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="categoria" class="form-label">Categoría</label>
+                    <select id="categoria" name="categoria" class="form-select" required>
+                        <option value="" disabled selected>Seleccione una categoría</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="monto" class="form-label">Monto</label>
+                    <input type="number" id="monto" name="monto" class="form-control" placeholder="Ingrese el monto" required>
+                </div>
+                <div class="mb-3">
+                    <label for="descripcion" class="form-label">Descripción</label>
+                    <textarea id="descripcion" name="descripcion" class="form-control" rows="3" placeholder="Ingrese una descripción" style="resize: none;"></textarea>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'lista_transacciones' %}" class="btn btn-secondary w-45">Cancelar</a>
+                    <button type="submit" class="btn btn-primary w-45">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-    <button type="submit" class="btn btn-primary">Guardar</button>
-    <a href="{% url 'lista_transacciones' %}" class="btn btn-secondary">Cancelar</a>
-</form>
+<script>
+    // Opciones de categorías
+    const categoriasIngreso = [
+        { value: "salario", text: "Salario" },
+        { value: "inversiones", text: "Inversiones" },
+        { value: "otros_ingresos", text: "Otros Ingresos" }
+    ];
+
+    const categoriasGasto = [
+        { value: "alimentacion", text: "Alimentación" },
+        { value: "transporte", text: "Transporte" },
+        { value: "entretenimiento", text: "Entretenimiento" },
+        { value: "otros_gastos", text: "Otros Gastos" }
+    ];
+
+    // Referencias a los elementos del formulario
+    const tipoSelect = document.getElementById("tipo");
+    const categoriaSelect = document.getElementById("categoria");
+
+    // Actualizar las categorías según el tipo seleccionado
+    tipoSelect.addEventListener("change", function () {
+        // Limpiar las opciones actuales
+        categoriaSelect.innerHTML = '<option value="" disabled selected>Seleccione una categoría</option>';
+
+        // Obtener las categorías correspondientes
+        const categorias = this.value === "ingreso" ? categoriasIngreso : categoriasGasto;
+
+        // Agregar las nuevas opciones
+        categorias.forEach(categoria => {
+            const option = document.createElement("option");
+            option.value = categoria.value;
+            option.textContent = categoria.text;
+            categoriaSelect.appendChild(option);
+        });
+    });
+</script>
 {% endblock %}
