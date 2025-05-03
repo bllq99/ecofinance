@@ -4,21 +4,56 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Dashboard</h1>
+<h1 class="mb-4 text-center">Resumen Financiero</h1>
 
-<div class="row">
+<!-- Resumen de ingresos, gastos y balance -->
+<div class="row text-center">
     <div class="col-md-4">
-        <div class="card text-bg-info mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Presupuesto</span>
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body text-bg-success rounded-3">
+                <i class="fas fa-wallet fa-3x mb-3"></i>
+                <h5 class="card-title">Ingresos</h5>
+                <h3 class="fw-bold">${{ ingresos|floatformat:2 }}</h3>
+                <p class="text-white-50">Total de ingresos registrados</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body text-bg-danger rounded-3">
+                <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                <h5 class="card-title">Gastos</h5>
+                <h3 class="fw-bold">${{ gastos|floatformat:2 }}</h3>
+                <p class="text-white-50">Total de gastos registrados</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body text-bg-dark rounded-3">
+                <i class="fas fa-balance-scale fa-3x mb-3"></i>
+                <h5 class="card-title">Balance</h5>
+                <h3 class="fw-bold">${{ balance|floatformat:2 }}</h3>
+                <p class="text-white-50">Ingresos menos gastos</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Presupuesto -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Presupuesto</h5>
                 <a href="{% url 'establecer_presupuesto' %}" class="btn btn-outline-light btn-sm">Establecer</a>
             </div>
             <div class="card-body">
-                <h5 class="card-title mb-3">${{ presupuesto|floatformat:2 }}</h5>
+                <h3 class="fw-bold text-primary">${{ presupuesto|floatformat:2 }}</h3>
                 {% if presupuesto > 0 %}
                     {% with porcentaje=ingresos|multiply:100|divide:presupuesto %}
-                    <div class="progress" style="height: 15px;">
-                        <div class="progress-bar {% if porcentaje > 100 %}bg-success{% else %}bg-info{% endif %}" 
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar {% if porcentaje > 100 %}bg-success{% else %}bg-primary{% endif %}" 
                              role="progressbar" 
                              style="width: {% if porcentaje > 100 %}100{% else %}{{ porcentaje|floatformat:0 }}{% endif %}%">
                             {{ porcentaje|floatformat:1 }}%
@@ -32,52 +67,41 @@
                         {% endif %}
                     </div>
                     {% endwith %}
+                {% else %}
+                    <p class="text-muted">No se ha establecido un presupuesto.</p>
                 {% endif %}
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-bg-danger mb-3">
-            <div class="card-header">Gastos</div>
-            <div class="card-body">
-                <h5 class="card-title">${{ gastos|floatformat:2 }}</h5>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-bg-primary mb-3">
-            <div class="card-header">Balance</div>
-            <div class="card-body">
-                <h5 class="card-title">${{ balance|floatformat:2 }}</h5>
             </div>
         </div>
     </div>
 </div>
 
-<h2 class="mt-5 mb-3">Objetivos de Ahorro</h2>
+<!-- Objetivos de ahorro -->
+<h2 class="mt-5 mb-3 text-center">🎯 Objetivos de Ahorro</h2>
 
 {% if objetivos %}
     <div class="row">
         {% for objetivo in objetivos %}
             <div class="col-md-6 mb-4">
-                <div class="card">
-                    <div class="card-header">{{ objetivo.nombre }}</div>
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-secondary text-white">
+                        {{ objetivo.nombre }}
+                    </div>
                     <div class="card-body">
                         <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo|floatformat:2 }}</strong></p>
                         <p>Monto actual: <strong>${{ objetivo.monto_actual|floatformat:2 }}</strong></p>
-                        <div class="progress">
+                        <div class="progress" style="height: 20px;">
                             {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
-                            <div class="progress-bar" role="progressbar"
+                            <div class="progress-bar bg-secondary" role="progressbar"
                                 style="width: {{ progreso|floatformat:0 }}%"
                                 aria-valuenow="{{ objetivo.monto_actual }}"
                                 aria-valuemin="0"
                                 aria-valuemax="{{ objetivo.monto_objetivo }}">
-                                {{ objetivo.monto_actual|floatformat:2 }} / {{ objetivo.monto_objetivo|floatformat:2 }}
+                                {{ progreso|floatformat:1 }}%
                             </div>
                             {% endwith %}
                         </div>
                         {% if objetivo.fecha_limite %}
-                            <p class="mt-2 text-muted">Fecha límite: {{ objetivo.fecha_limite }}</p>
+                            <p class="mt-2 text-muted">Fecha límite: {{ objetivo.fecha_limite|date:"d/m/Y" }}</p>
                         {% endif %}
                     </div>
                 </div>
@@ -85,14 +109,12 @@
         {% endfor %}
     </div>
 {% else %}
-    <p>No hay objetivos de ahorro registrados.</p>
+    <p class="text-center text-muted">No hay objetivos de ahorro registrados.</p>
 {% endif %}
-
-<a class="btn btn-outline-primary mt-4" href="{% url 'nuevo_objetivo' %}">➕ Nuevo Objetivo</a>
 
 <!-- Botón flotante para agregar transacción -->
 <a href="{% url 'nueva_transaccion' %}" 
-   class="btn btn-primary btn-lg position-fixed bottom-0 end-0 m-4 rounded-circle shadow"
+   class="btn btn-success btn-lg position-fixed bottom-0 end-0 m-4 rounded-circle shadow"
    style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
     <i class="fas fa-plus"></i>
 </a>

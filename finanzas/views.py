@@ -13,8 +13,20 @@ from django.utils.timezone import localtime
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
 def dashboard(request):
-    ingresos = Transaccion.objects.filter(tipo='INGRESO').aggregate(Sum('monto'))['monto__sum'] or 0
-    gastos = Transaccion.objects.filter(tipo='GASTO').aggregate(Sum('monto'))['monto__sum'] or 0
+    # Obtener fecha actual
+    fecha_actual = timezone.now().date()
+    
+    # Filtrar transacciones para solo incluir las que han ocurrido hasta hoy
+    ingresos = Transaccion.objects.filter(
+        tipo='INGRESO', 
+        fecha__lte=fecha_actual  # Solo fechas menores o iguales a la actual
+    ).aggregate(Sum('monto'))['monto__sum'] or 0
+    
+    gastos = Transaccion.objects.filter(
+        tipo='GASTO',
+        fecha__lte=fecha_actual  # Solo fechas menores o iguales a la actual
+    ).aggregate(Sum('monto'))['monto__sum'] or 0
+    
     balance = ingresos - gastos
     objetivos = ObjetivoAhorro.objects.all()
     
@@ -34,11 +46,17 @@ def dashboard(request):
 
 # 📄 Lista de transacciones
 def lista_transacciones(request):
+    # Verificar si debemos mostrar transacciones futuras
+    mostrar_futuras = 'mostrar_futuras' in request.GET
+    
     # Obtener fecha actual
     fecha_actual = timezone.now().date()
     
-    # Obtener solo transacciones hasta la fecha actual (excluir futuras)
-    transacciones = Transaccion.objects.filter(fecha__lte=fecha_actual).order_by('-fecha')
+    # Filtrar transacciones según la preferencia
+    if mostrar_futuras:
+        transacciones = Transaccion.objects.all().order_by('-fecha')
+    else:
+        transacciones = Transaccion.objects.filter(fecha__lte=fecha_actual).order_by('-fecha')
     
     # Crear un diccionario para agrupar transacciones por mes
     transacciones_por_mes = {}
