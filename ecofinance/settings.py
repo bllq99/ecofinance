@@ -24,12 +24,12 @@ try:
     # Database configuration
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'ecofinance_db',
-            'USER': 'postgres',
-            'PASSWORD': '1234567890',
-            'HOST': 'localhost',
-            'PORT': '5432',
+            'ENGINE': config['database']['engine'],
+            'NAME': config['database']['name'],
+            'USER': config['database']['user'],
+            'PASSWORD': config['database']['password'],
+            'HOST': config['database']['host'],
+            'PORT': config['database']['port'],
         }
     }
 
