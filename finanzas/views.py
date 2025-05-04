@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import Transaccion, ObjetivoAhorro, Presupuesto, SerieRecurrente
 from .forms import TransaccionForm, ObjetivoForm, PresupuestoForm
 from django.db.models import Sum
@@ -242,3 +242,10 @@ def establecer_presupuesto(request):
     return render(request, 'finanzas/establecer_presupuesto.html', {
         'form': form
     })
+
+
+def eliminar_transaccion(request, id):
+    transaccion = get_object_or_404(Transaccion, id=id)
+    transaccion.delete()
+    messages.success(request, "Transacción eliminada con éxito.")
+    return redirect('lista_transacciones')  # Cambia 'lista_transacciones' por el nombre de tu vista principal

@@ -79,8 +79,33 @@
                                                 {% else %}
                                                     <span class="text-danger fw-bold">-{{ transaccion.monto|formato_clp }}</span>
                                                 {% endif %}
+                                                <!-- Botón de eliminar -->
+                                                <button class="btn btn-sm btn-danger ms-2" data-bs-toggle="modal" data-bs-target="#deleteModal{{ transaccion.id }}">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
                                             </td>
                                         </tr>
+                                        <!-- Modal de confirmación -->
+                                        <div class="modal fade" id="deleteModal{{ transaccion.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ transaccion.id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="deleteModalLabel{{ transaccion.id }}">Confirmar eliminación</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        ¿Estás seguro de que deseas eliminar esta transacción?
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <form method="POST" action="{% url 'eliminar_transaccion' transaccion.id %}">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                         {% endfor %}
                                     </tbody>
                                 </table>
