@@ -12,42 +12,17 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
   <div class="container-fluid">
     <a class="navbar-brand" href="{% url 'dashboard' %}">💰 Finanzas</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
+    <div class="collapse navbar-collapse">
       <ul class="navbar-nav me-auto">
         <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'lista_transacciones' %}">Transacciones</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'lista_objetivos' %}">Objetivos</a></li>
       </ul>
-      
-      {% if user.is_authenticated %}
-      <div class="d-flex align-items-center">
-        <span class="text-light me-3">👤 {{ user.first_name|default:user.email }}</span>
-        <a href="{% url 'logout' %}" class="btn btn-outline-light">Cerrar Sesión</a>
-      </div>
-      {% else %}
-      <div class="ms-auto">
-        <a href="{% url 'login' %}" class="btn btn-primary">Iniciar Sesión</a>
-      </div>
-      {% endif %}
     </div>
   </div>
 </nav>
 
 <div class="container">
-    {% if messages %}
-    <div class="messages mb-4">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
     {% block content %}
     <!-- Contenido individual de cada vista irá aquí -->
     {% endblock %}
@@ -56,9 +31,7 @@
 <footer class="text-center mt-5 mb-3 text-muted">
     <small>
         &copy; 2025 Finanzas Personales. Todos los derechos reservados.
-    </small>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

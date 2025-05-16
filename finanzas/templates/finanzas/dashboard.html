@@ -1,5 +1,4 @@
 {% extends 'finanzas/base.html' %}
-{% load custom_filters %}
 
 {% block title %}Dashboard{% endblock %}
 
@@ -8,31 +7,10 @@
 
 <div class="row">
     <div class="col-md-4">
-        <div class="card text-bg-info mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Presupuesto</span>
-                <a href="{% url 'establecer_presupuesto' %}" class="btn btn-outline-light btn-sm">Establecer</a>
-            </div>
+        <div class="card text-bg-success mb-3">
+            <div class="card-header">Ingresos</div>
             <div class="card-body">
-                <h5 class="card-title mb-3">${{ presupuesto|floatformat:2 }}</h5>
-                {% if presupuesto > 0 %}
-                    {% with porcentaje=ingresos|multiply:100|divide:presupuesto %}
-                    <div class="progress" style="height: 15px;">
-                        <div class="progress-bar {% if porcentaje > 100 %}bg-success{% else %}bg-info{% endif %}" 
-                             role="progressbar" 
-                             style="width: {% if porcentaje > 100 %}100{% else %}{{ porcentaje|floatformat:0 }}{% endif %}%">
-                            {{ porcentaje|floatformat:1 }}%
-                        </div>
-                    </div>
-                    <div class="text-muted mt-2 small">
-                        {% if porcentaje >= 100 %}
-                            ¡Meta alcanzada! 🎉
-                        {% else %}
-                            Falta: ${{ presupuesto|subtract:ingresos|floatformat:2 }}
-                        {% endif %}
-                    </div>
-                    {% endwith %}
-                {% endif %}
+                <h5 class="card-title">${{ ingresos }}</h5>
             </div>
         </div>
     </div>
@@ -40,7 +18,7 @@
         <div class="card text-bg-danger mb-3">
             <div class="card-header">Gastos</div>
             <div class="card-body">
-                <h5 class="card-title">${{ gastos|floatformat:2 }}</h5>
+                <h5 class="card-title">${{ gastos }}</h5>
             </div>
         </div>
     </div>
@@ -48,7 +26,7 @@
         <div class="card text-bg-primary mb-3">
             <div class="card-header">Balance</div>
             <div class="card-body">
-                <h5 class="card-title">${{ balance|floatformat:2 }}</h5>
+                <h5 class="card-title">${{ balance }}</h5>
             </div>
         </div>
     </div>
@@ -63,18 +41,18 @@
                 <div class="card">
                     <div class="card-header">{{ objetivo.nombre }}</div>
                     <div class="card-body">
-                        <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo|floatformat:2 }}</strong></p>
-                        <p>Monto actual: <strong>${{ objetivo.monto_actual|floatformat:2 }}</strong></p>
+                        <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo }}</strong></p>
+                        <p>Monto actual: <strong>${{ objetivo.monto_actual }}</strong></p>
                         <div class="progress">
-                            {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
+                            {% with progreso=objetivo.monto_actual|divisibleby:objetivo.monto_objetivo %}
+                            {% endwith %}
                             <div class="progress-bar" role="progressbar"
-                                style="width: {{ progreso|floatformat:0 }}%"
+                                style="width: {{ objetivo.monto_actual|floatformat:2|divisibleby:objetivo.monto_objetivo|floatformat:0 }}%;"
                                 aria-valuenow="{{ objetivo.monto_actual }}"
                                 aria-valuemin="0"
                                 aria-valuemax="{{ objetivo.monto_objetivo }}">
                                 {{ objetivo.monto_actual|floatformat:2 }} / {{ objetivo.monto_objetivo|floatformat:2 }}
                             </div>
-                            {% endwith %}
                         </div>
                         {% if objetivo.fecha_limite %}
                             <p class="mt-2 text-muted">Fecha límite: {{ objetivo.fecha_limite }}</p>

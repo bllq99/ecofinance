@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils import timezone
 
 class Transaccion(models.Model):
     TIPO_CHOICES = [
@@ -24,13 +23,3 @@ class ObjetivoAhorro(models.Model):
 
     def __str__(self):
         return self.nombre
-
-class Presupuesto(models.Model):
-    monto = models.DecimalField(max_digits=10, decimal_places=2)
-    fecha_creacion = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        get_latest_by = 'fecha_creacion'
-
-    def __str__(self):
-        return f"Presupuesto: ${self.monto}"

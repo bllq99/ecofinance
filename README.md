@@ -27,15 +27,12 @@ Aplicación web para gestión de finanzas personales con Django y PostgreSQL.
 ```bash
 git clone https://github.com/bllq99/ecofinance.git
 cd ecofinance
-````
+```
 Configurar entorno virtual:
 
 ```bash
 python -m venv venv
-# Windows
 venv\Scripts\activate
-# Linux/macOS
-source venv/bin/activate
 ```
 Instalar dependencias:
 
