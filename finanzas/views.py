@@ -101,7 +101,7 @@ def login_view(request):
             
             if user is not None:
                 login(request, user)
-                messages.success(request, f'¡Bienvenido {user.username}!')
+                messages.success(request, f'¡Bienvenido {user.first_name}!')
                 return redirect('dashboard')
             else:
                 messages.error(request, 'Correo o contraseña incorrectos.')
