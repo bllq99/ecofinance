@@ -34,6 +34,19 @@
     {% endfor %}
 </div>
 {% else %}
-    <p>No hay objetivos de ahorro registrados.</p>
+    <div class="card shadow-sm border-0">
+        <div class="card-body text-center py-5">
+            <h4 class="text-muted mb-3">Aún no tienes objetivos de ahorro registrados.</h4>
+            <p class="mb-4">
+                ¡Comienza a planificar tu futuro! Puedes registrar objetivos como:<br>
+                <span class="mt-2 d-block"><i class="fas fa-umbrella-beach me-2"></i>Vacaciones</span>
+                <span class="mt-2 d-block"><i class="fas fa-piggy-bank me-2"></i>Fondo de emergencia</span>
+                <span class="mt-2 d-block"><i class="fas fa-car-side me-2"></i>Cambiar el auto</span>
+            </p>
+            <a href="{% url 'nuevo_objetivo' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus me-2"></i>Crear mi primer objetivo
+            </a>
+        </div>
+    </div>
 {% endif %}
 {% endblock %}

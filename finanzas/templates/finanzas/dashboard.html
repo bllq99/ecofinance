@@ -40,41 +40,6 @@
     </div>
 </div>
 
-<!-- Presupuesto -->
-<div class="row mt-4">
-    <div class="col-md-12">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Presupuesto</h5>
-                <a href="{% url 'establecer_presupuesto' %}" class="btn btn-outline-light btn-sm">Establecer</a>
-            </div>
-            <div class="card-body">
-                <h3 class="fw-bold text-primary">{{ presupuesto|formato_clp}}</h3>
-                {% if presupuesto > 0 %}
-                    {% with porcentaje=ingresos|multiply:100|divide:presupuesto %}
-                    <div class="progress" style="height: 20px;">
-                        <div class="progress-bar {% if porcentaje > 100 %}bg-success{% else %}bg-primary{% endif %}" 
-                             role="progressbar" 
-                             style="width: {% if porcentaje > 100 %}100{% else %}{{ porcentaje|floatformat:0 }}{% endif %}%">
-                            {{ porcentaje|floatformat:1 }}%
-                        </div>
-                    </div>
-                    <div class="text-muted mt-2 small">
-                        {% if porcentaje >= 100 %}
-                            ¡Meta alcanzada! 🎉
-                        {% else %}
-                            Falta: ${{ presupuesto|subtract:ingresos|floatformat:2 }}
-                        {% endif %}
-                    </div>
-                    {% endwith %}
-                {% else %}
-                    <p class="text-muted">No se ha establecido un presupuesto.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Objetivos de ahorro -->
 <h2 class="mt-5 mb-3 text-center">🎯 Objetivos de Ahorro</h2>
 
