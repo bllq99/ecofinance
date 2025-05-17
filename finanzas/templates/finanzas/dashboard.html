@@ -5,7 +5,70 @@
 {% block content %}
 <h1 class="mb-4">Dashboard</h1>
 
+<<<<<<< Updated upstream
 <div class="row">
+=======
+<div class="row mb-4">
+    {% if objetivos_vencidos %}
+    <div class="col-12">
+        <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong class="me-2">¡Objetivos vencidos!</strong>
+                {% for objetivo in objetivos_vencidos %}
+                <span class="me-3">
+                    {{ objetivo.nombre }} (vencido hace {{ objetivo.dias_vencido }} días)
+                    <div class="progress d-inline-block ms-2" style="width: 100px; height: 4px; vertical-align: middle;">
+                        <div class="progress-bar bg-danger" role="progressbar" 
+                             style="width: {{ objetivo.progreso }}%;" 
+                             aria-valuenow="{{ objetivo.progreso }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </span>
+                {% endfor %}
+                <a href="{% url 'lista_objetivos' %}" class="btn btn-danger btn-sm ms-auto">
+                    <i class="fas fa-bullseye me-1"></i>Ver objetivos
+                </a>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if objetivos_por_vencer %}
+    <div class="col-12">
+        <div class="alert alert-warning alert-dismissible fade show py-2" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong class="me-2">¡Objetivos próximos a vencer!</strong>
+                {% for objetivo in objetivos_por_vencer %}
+                <span class="me-3">
+                    {{ objetivo.nombre }} (faltan {{ objetivo.dias_restantes }} días)
+                    <div class="progress d-inline-block ms-2" style="width: 100px; height: 4px; vertical-align: middle;">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ objetivo.progreso }}%;" 
+                             aria-valuenow="{{ objetivo.progreso }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </span>
+                {% endfor %}
+                <a href="{% url 'lista_objetivos' %}" class="btn btn-warning btn-sm ms-auto">
+                    <i class="fas fa-bullseye me-1"></i>Ver objetivos
+                </a>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Resumen de ingresos, gastos y balance -->
+<div class="row text-center">
+>>>>>>> Stashed changes
     <div class="col-md-4">
         <div class="card text-bg-success mb-3">
             <div class="card-header">Ingresos</div>
@@ -35,6 +98,7 @@
 <h2 class="mt-5 mb-3">Objetivos de Ahorro</h2>
 
 {% if objetivos %}
+<<<<<<< Updated upstream
     <div class="row">
         {% for objetivo in objetivos %}
             <div class="col-md-6 mb-4">
@@ -59,13 +123,50 @@
                         {% endif %}
                     </div>
                 </div>
+=======
+<div class="row">
+    {% for objetivo in objetivos %}
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-secondary text-white">
+                {{ objetivo.nombre }}
+>>>>>>> Stashed changes
             </div>
-        {% endfor %}
+            <div class="card-body">
+                <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo|floatformat:2 }}</strong></p>
+                <p>Monto actual: <strong>${{ objetivo.monto_actual|floatformat:2 }}</strong></p>
+                <div class="progress" style="height: 20px;">
+                    {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
+                    <div class="progress-bar bg-secondary" role="progressbar"
+                        style="width: {{ progreso|floatformat:0 }}%"
+                        aria-valuenow="{{ objetivo.monto_actual }}"
+                        aria-valuemin="0"
+                        aria-valuemax="{{ objetivo.monto_objetivo }}">
+                        {{ progreso|floatformat:1 }}%
+                    </div>
+                    {% endwith %}
+                </div>
+                {% if objetivo.fecha_limite %}
+                    <p class="mt-2 text-muted">Fecha límite: {{ objetivo.fecha_limite|date:"d/m/Y" }}</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
+    {% endfor %}
+</div>
 {% else %}
     <p>No hay objetivos de ahorro registrados.</p>
 {% endif %}
 
+<<<<<<< Updated upstream
 <a class="btn btn-outline-primary mt-4" href="{% url 'nuevo_objetivo' %}">➕ Nuevo Objetivo</a>
 
+=======
+<!-- Botón flotante para agregar transacción -->
+<a href="{% url 'nueva_transaccion' %}" 
+   class="btn btn-primary btn-lg position-fixed bottom-0 end-0 m-4 rounded-circle shadow"
+   style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+    <i class="fas fa-plus"></i>
+</a>
+>>>>>>> Stashed changes
 {% endblock %}

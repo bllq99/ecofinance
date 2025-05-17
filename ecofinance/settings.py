@@ -111,3 +111,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configuración de autenticación
+LOGIN_REDIRECT_URL = 'dashboard'  # Redirige al dashboard después del login
+LOGIN_URL = 'login'  # URL para la página de login
+
+# Backend de autenticación personalizado
+AUTHENTICATION_BACKENDS = [
+    'finanzas.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Mantener el backend por defecto como respaldo
+]

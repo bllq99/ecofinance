@@ -1,0 +1,87 @@
+{% extends 'finanzas/base.html' %}
+
+{% block title %}Editar Objetivo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Editar Objetivo: {{ objetivo.nombre }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.nombre.id_for_label }}" class="form-label">Nombre del objetivo</label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}
+                            <div class="text-danger">
+                                {% for error in form.nombre.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.monto_objetivo.id_for_label }}" class="form-label">Monto objetivo</label>
+                            {{ form.monto_objetivo }}
+                            {% if form.monto_objetivo.errors %}
+                            <div class="text-danger">
+                                {% for error in form.monto_objetivo.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.monto_actual.id_for_label }}" class="form-label">Monto actual</label>
+                            {{ form.monto_actual }}
+                            {% if form.monto_actual.errors %}
+                            <div class="text-danger">
+                                {% for error in form.monto_actual.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.fecha_limite.id_for_label }}" class="form-label">Fecha límite (opcional)</label>
+                            {{ form.fecha_limite }}
+                            {% if form.fecha_limite.errors %}
+                            <div class="text-danger">
+                                {% for error in form.fecha_limite.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'lista_objetivos' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Guardar cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

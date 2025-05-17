@@ -19,6 +19,18 @@
         <li class="nav-item"><a class="nav-link" href="{% url 'lista_objetivos' %}">Objetivos</a></li>
       </ul>
     </div>
+<<<<<<< Updated upstream
+=======
+          <!-- Aquí el botón alineado a la derecha -->
+          <div class="ms-auto">
+            {% if user.is_authenticated %}
+              <span class="text-white me-3">¡Hola, {{ user.username }}!</span>
+              <a href="{% url 'login' %}" class="btn btn-outline-light">Cerrar Sesión</a>
+            {% else %}
+              <a href="{% url 'login' %}" class="btn btn-primary">Iniciar Sesión</a>
+            {% endif %}
+          </div>
+>>>>>>> Stashed changes
   </div>
 </nav>
 
