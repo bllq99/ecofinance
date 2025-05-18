@@ -1,13 +1,11 @@
 {% extends 'finanzas/base.html' %}
+{% load finanzas_extras %}
 
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
 <h1 class="mb-4">Dashboard</h1>
 
-<<<<<<< Updated upstream
-<div class="row">
-=======
 <div class="row mb-4">
     {% if objetivos_vencidos %}
     <div class="col-12">
@@ -67,29 +65,42 @@
 </div>
 
 <!-- Resumen de ingresos, gastos y balance -->
-<div class="row text-center">
->>>>>>> Stashed changes
+<div class="row">
     <div class="col-md-4">
-        <div class="card text-bg-success mb-3">
-            <div class="card-header">Ingresos</div>
+        <div class="card bg-success text-white mb-4">
             <div class="card-body">
-                <h5 class="card-title">${{ ingresos }}</h5>
+                <h5 class="card-title">Ingresos</h5>
+                <h2 class="mb-0">${{ ingresos }}</h2>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-bg-danger mb-3">
-            <div class="card-header">Gastos</div>
+        <div class="card bg-danger text-white mb-4">
             <div class="card-body">
-                <h5 class="card-title">${{ gastos }}</h5>
+                <h5 class="card-title">Gastos</h5>
+                <h2 class="mb-0">${{ gastos }}</h2>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-bg-primary mb-3">
-            <div class="card-header">Balance</div>
+        <div class="card bg-primary text-white mb-4">
             <div class="card-body">
-                <h5 class="card-title">${{ balance }}</h5>
+                <h5 class="card-title">Balance</h5>
+                <h2 class="mb-0">${{ balance }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico circular de balance y gastos -->
+<div class="row mb-4">
+    <div class="col-md-6 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">Distribución de Balance y Gastos por Categoría</h5>
+            </div>
+            <div class="card-body" style="height: 400px;">
+                <canvas id="balanceChart"></canvas>
             </div>
         </div>
     </div>
@@ -98,39 +109,12 @@
 <h2 class="mt-5 mb-3">Objetivos de Ahorro</h2>
 
 {% if objetivos %}
-<<<<<<< Updated upstream
-    <div class="row">
-        {% for objetivo in objetivos %}
-            <div class="col-md-6 mb-4">
-                <div class="card">
-                    <div class="card-header">{{ objetivo.nombre }}</div>
-                    <div class="card-body">
-                        <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo }}</strong></p>
-                        <p>Monto actual: <strong>${{ objetivo.monto_actual }}</strong></p>
-                        <div class="progress">
-                            {% with progreso=objetivo.monto_actual|divisibleby:objetivo.monto_objetivo %}
-                            {% endwith %}
-                            <div class="progress-bar" role="progressbar"
-                                style="width: {{ objetivo.monto_actual|floatformat:2|divisibleby:objetivo.monto_objetivo|floatformat:0 }}%;"
-                                aria-valuenow="{{ objetivo.monto_actual }}"
-                                aria-valuemin="0"
-                                aria-valuemax="{{ objetivo.monto_objetivo }}">
-                                {{ objetivo.monto_actual|floatformat:2 }} / {{ objetivo.monto_objetivo|floatformat:2 }}
-                            </div>
-                        </div>
-                        {% if objetivo.fecha_limite %}
-                            <p class="mt-2 text-muted">Fecha límite: {{ objetivo.fecha_limite }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-=======
 <div class="row">
     {% for objetivo in objetivos %}
     <div class="col-md-6 mb-4">
         <div class="card shadow-sm border-0">
             <div class="card-header bg-secondary text-white">
                 {{ objetivo.nombre }}
->>>>>>> Stashed changes
             </div>
             <div class="card-body">
                 <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo|floatformat:2 }}</strong></p>
@@ -158,15 +142,89 @@
     <p>No hay objetivos de ahorro registrados.</p>
 {% endif %}
 
-<<<<<<< Updated upstream
-<a class="btn btn-outline-primary mt-4" href="{% url 'nuevo_objetivo' %}">➕ Nuevo Objetivo</a>
-
-=======
 <!-- Botón flotante para agregar transacción -->
 <a href="{% url 'nueva_transaccion' %}" 
    class="btn btn-primary btn-lg position-fixed bottom-0 end-0 m-4 rounded-circle shadow"
    style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
     <i class="fas fa-plus"></i>
 </a>
->>>>>>> Stashed changes
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var ctx = document.getElementById('balanceChart');
+    
+    // Asegurarnos de que los valores sean números
+    var balance = parseFloat('{{ balance|default:"0" }}') || 0;
+    var gastosCategorias = {{ gastos_categorias|safe }};
+    
+    // Preparar datos para el gráfico
+    var labels = ['Balance'];
+    var data = [balance];
+    var backgroundColors = ['rgba(40, 167, 69, 0.8)']; // Verde para balance
+    
+    // Colores para las categorías de gastos
+    var coloresGastos = [
+        'rgba(220, 53, 69, 0.8)',   // Rojo
+        'rgba(255, 193, 7, 0.8)',   // Amarillo
+        'rgba(23, 162, 184, 0.8)',  // Azul claro
+        'rgba(111, 66, 193, 0.8)',  // Púrpura
+        'rgba(253, 126, 20, 0.8)',  // Naranja
+        'rgba(108, 117, 125, 0.8)'  // Gris
+    ];
+    
+    // Agregar gastos por categoría
+    gastosCategorias.forEach(function(gasto, index) {
+        labels.push(gasto.categoria);
+        data.push(gasto.monto);
+        backgroundColors.push(coloresGastos[index % coloresGastos.length]);
+    });
+    
+    // Solo mostrar el gráfico si hay datos
+    if (balance > 0 || data.length > 1) {
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var label = context.label || '';
+                                var value = context.raw || 0;
+                                var total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                var percentage = ((value / total) * 100).toFixed(1);
+                                return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        // Mostrar mensaje si no hay datos
+        ctx.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay datos para mostrar</div>';
+    }
+});
+</script>
 {% endblock %}

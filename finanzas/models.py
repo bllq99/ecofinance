@@ -1,11 +1,8 @@
 from django.db import models
-<<<<<<< Updated upstream
-=======
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 import datetime
 from django.contrib.auth.models import User
->>>>>>> Stashed changes
 
 class Transaccion(models.Model):
     TIPO_CHOICES = [
@@ -19,12 +16,15 @@ class Transaccion(models.Model):
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
     fecha = models.DateField(auto_now_add=True)
     categoria = models.CharField(max_length=100, blank=True, null=True)
+    es_recurrente = models.BooleanField(default=False)
+    periodicidad = models.CharField(max_length=20, blank=True, null=True)
+    fecha_inicio = models.DateField(null=True, blank=True)
+    fecha_fin = models.DateField(null=True, blank=True)
+    serie_recurrente = models.ForeignKey('SerieRecurrente', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f"{self.descripcion} - {self.tipo} - ${self.monto}"
 
-<<<<<<< Updated upstream
-=======
 class SerieRecurrente(models.Model):
     """
     Modelo para agrupar transacciones que forman parte de la misma serie recurrente.
@@ -89,6 +89,7 @@ class SerieRecurrente(models.Model):
             
             # Crear nueva transacción con los mismos datos pero fecha diferente
             nueva_transaccion = Transaccion.objects.create(
+                usuario=transaccion_base.usuario,
                 descripcion=transaccion_base.descripcion,
                 monto=transaccion_base.monto,
                 tipo=transaccion_base.tipo,
@@ -105,7 +106,6 @@ class SerieRecurrente(models.Model):
             fecha_actual += incremento
             contador += 1
 
->>>>>>> Stashed changes
 class ObjetivoAhorro(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     nombre = models.CharField(max_length=255)
@@ -114,9 +114,6 @@ class ObjetivoAhorro(models.Model):
     fecha_limite = models.DateField(null=True, blank=True)
 
     def __str__(self):
-<<<<<<< Updated upstream
-        return self.nombre
-=======
         return self.nombre
 
 class Presupuesto(models.Model):
@@ -129,4 +126,3 @@ class Presupuesto(models.Model):
 
     def __str__(self):
         return f"Presupuesto: ${self.monto}"
->>>>>>> Stashed changes

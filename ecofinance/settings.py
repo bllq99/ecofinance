@@ -26,7 +26,7 @@ try:
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': 'ecofinance_db',
-            'USER': 'panxho',
+            'USER': 'postgres',
             'PASSWORD': '1234567890',
             'HOST': 'localhost',
             'PORT': '5432',
