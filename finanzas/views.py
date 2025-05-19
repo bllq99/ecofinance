@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Transaccion, ObjetivoAhorro, Presupuesto, SerieRecurrente
-from .forms import TransaccionForm, ObjetivoForm, PresupuestoForm
+from .models import Transaccion, ObjetivoAhorro, SerieRecurrente
+from .forms import TransaccionForm, ObjetivoForm
 from django.db.models import Sum
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
@@ -223,24 +223,8 @@ def registro_view(request):
 
     return render(request, 'finanzas/registro.html')
 
-
-def establecer_presupuesto(request):
-    if request.method == 'POST':
-        form = PresupuestoForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Presupuesto establecido correctamente')
-            return redirect('dashboard')
-    else:
-        form = PresupuestoForm()
-
-    return render(request, 'finanzas/establecer_presupuesto.html', {
-        'form': form
-    })
-
-
 def eliminar_transaccion(request, id):
     transaccion = get_object_or_404(Transaccion, id=id)
     transaccion.delete()
     messages.success(request, "Transacción eliminada con éxito.")
-    return redirect('lista_transacciones')  # Cambia 'lista_transacciones' por el nombre de tu vista principal
+    return redirect('lista_transacciones') 
