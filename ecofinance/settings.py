@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'finanzas'
 ]
 
@@ -99,6 +100,12 @@ LANGUAGE_CODE = 'es-cl'  # Cambiado a español de Chile
 TIME_ZONE = 'America/Santiago'  # Zona horaria de Chile
 USE_I18N = True
 USE_TZ = True
+USE_L10N = True  # Habilitar localización
+
+# Formato de números
+NUMBER_GROUPING = 3
+THOUSAND_SEPARATOR = '.'
+DECIMAL_SEPARATOR = ','
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'

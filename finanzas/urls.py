@@ -10,6 +10,7 @@ urlpatterns = [
     path('objetivos/nuevo/', views.nuevo_objetivo, name='nuevo_objetivo'),
     path('objetivos/<int:objetivo_id>/editar/', views.editar_objetivo, name='editar_objetivo'),
     path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
     path('registro/', views.registro_view, name='registro'),
     path('presupuesto/', views.establecer_presupuesto, name='establecer_presupuesto'),
 ]

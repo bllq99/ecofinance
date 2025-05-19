@@ -1,4 +1,5 @@
 {% extends 'finanzas/base.html' %}
+{% load humanize %}
 
 {% block title %}Transacciones{% endblock %}
 
@@ -23,8 +24,8 @@
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">{{ mes_data.nombre }}</h5>
             <div>
-                <span class="badge bg-success me-2">Ingresos: ${{ mes_data.total_ingresos|floatformat:2 }}</span>
-                <span class="badge bg-danger">Gastos: ${{ mes_data.total_gastos|floatformat:2 }}</span>
+                <span class="badge bg-success me-2">Ingresos: ${{ mes_data.total_ingresos|floatformat:0|intcomma }}</span>
+                <span class="badge bg-danger">Gastos: ${{ mes_data.total_gastos|floatformat:0|intcomma }}</span>
             </div>
         </div>
         <div class="card-body p-0">
@@ -53,7 +54,9 @@
                                     <span class="badge bg-danger">Gasto</span>
                                 {% endif %}
                             </td>
-                            <td>${{ transaccion.monto|floatformat:2 }}</td>
+                            <td class="{% if transaccion.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
+                                ${{ transaccion.monto|floatformat:0|intcomma }}
+                            </td>
                             <td>
                                 <a href="{% url 'eliminar_transaccion' transaccion.id %}" 
                                    class="btn btn-danger btn-sm"

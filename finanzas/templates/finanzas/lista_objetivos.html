@@ -1,6 +1,22 @@
 {% extends 'finanzas/base.html' %}
+{% load humanize %}
 
 {% block title %}Objetivos de Ahorro{% endblock %}
+
+{% block extra_css %}
+<style>
+.progress-inline {
+    width: 100px;
+    height: 4px;
+    vertical-align: middle;
+    display: inline-block;
+    margin-left: 0.5rem;
+}
+.progress-bar-inline {
+    height: 100%;
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <h1 class="mb-4">Objetivos de Ahorro</h1>
@@ -15,8 +31,8 @@
                 {% for objetivo in objetivos_vencidos %}
                 <span class="me-3">
                     {{ objetivo.nombre }} (vencido hace {{ objetivo.dias_vencido }} días)
-                    <div class="progress d-inline-block ms-2" style="width: 100px; height: 4px; vertical-align: middle;">
-                        <div class="progress-bar bg-danger" role="progressbar" 
+                    <div class="progress progress-inline">
+                        <div class="progress-bar bg-danger progress-bar-inline" role="progressbar" 
                              style="width: {{ objetivo.progreso }}%;" 
                              aria-valuenow="{{ objetivo.progreso }}" 
                              aria-valuemin="0" 
@@ -40,8 +56,8 @@
                 {% for objetivo in objetivos_por_vencer %}
                 <span class="me-3">
                     {{ objetivo.nombre }} (faltan {{ objetivo.dias_restantes }} días)
-                    <div class="progress d-inline-block ms-2" style="width: 100px; height: 4px; vertical-align: middle;">
-                        <div class="progress-bar" role="progressbar" 
+                    <div class="progress progress-inline">
+                        <div class="progress-bar progress-bar-inline" role="progressbar" 
                              style="width: {{ objetivo.progreso }}%;" 
                              aria-valuenow="{{ objetivo.progreso }}" 
                              aria-valuemin="0" 
@@ -79,10 +95,10 @@
                 {% endif %}
             </div>
             <div class="card-body">
-                <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo }}</strong></p>
-                <p>Monto actual: <strong>${{ objetivo.monto_actual }}</strong></p>
+                <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo|floatformat:0|intcomma }}</strong></p>
+                <p>Monto actual: <strong>${{ objetivo.monto_actual|floatformat:0|intcomma }}</strong></p>
                 <div class="progress">
-                    <div class="progress-bar {% if objetivo.fecha_limite and objetivo.fecha_limite < fecha_actual %}bg-danger{% endif %}" role="progressbar"
+                    <div class="progress-bar {% if objetivo.fecha_limite and objetivo.fecha_limite < fecha_actual %}bg-danger{% endif %} progress-bar-inline" role="progressbar"
                          style="width: {{ objetivo.progreso }}%;"
                          aria-valuenow="{{ objetivo.monto_actual }}"
                          aria-valuemin="0"

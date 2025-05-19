@@ -1,7 +1,35 @@
 {% extends 'finanzas/base.html' %}
 {% load finanzas_extras %}
+{% load humanize %}
 
 {% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.progress-inline {
+    width: 100px;
+    height: 4px;
+    vertical-align: middle;
+    display: inline-block;
+    margin-left: 0.5rem;
+}
+.progress-bar-inline {
+    height: 100%;
+}
+.progress-bar-danger {
+    background-color: #dc3545;
+}
+.progress-bar-warning {
+    background-color: #ffc107;
+}
+.progress-bar-secondary {
+    background-color: #6c757d;
+}
+.progress-bar-width {
+    width: var(--progress-width);
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <h1 class="mb-4">Dashboard</h1>
@@ -16,9 +44,9 @@
                 {% for objetivo in objetivos_vencidos %}
                 <span class="me-3">
                     {{ objetivo.nombre }} (vencido hace {{ objetivo.dias_vencido }} días)
-                    <div class="progress d-inline-block ms-2" style="width: 100px; height: 4px; vertical-align: middle;">
-                        <div class="progress-bar bg-danger" role="progressbar" 
-                             style="width: {{ objetivo.progreso }}%;" 
+                    <div class="progress progress-inline">
+                        <div class="progress-bar progress-bar-inline progress-bar-danger" role="progressbar" 
+                             style="--progress-width: {{ objetivo.progreso }}%;"
                              aria-valuenow="{{ objetivo.progreso }}" 
                              aria-valuemin="0" 
                              aria-valuemax="100">
@@ -44,9 +72,9 @@
                 {% for objetivo in objetivos_por_vencer %}
                 <span class="me-3">
                     {{ objetivo.nombre }} (faltan {{ objetivo.dias_restantes }} días)
-                    <div class="progress d-inline-block ms-2" style="width: 100px; height: 4px; vertical-align: middle;">
-                        <div class="progress-bar" role="progressbar" 
-                             style="width: {{ objetivo.progreso }}%;" 
+                    <div class="progress progress-inline">
+                        <div class="progress-bar progress-bar-inline progress-bar-warning" role="progressbar" 
+                             style="--progress-width: {{ objetivo.progreso }}%;"
                              aria-valuenow="{{ objetivo.progreso }}" 
                              aria-valuemin="0" 
                              aria-valuemax="100">
@@ -70,7 +98,7 @@
         <div class="card bg-success text-white mb-4">
             <div class="card-body">
                 <h5 class="card-title">Ingresos</h5>
-                <h2 class="mb-0">${{ ingresos }}</h2>
+                <h2 class="mb-0">${{ ingresos|floatformat:0|intcomma }}</h2>
             </div>
         </div>
     </div>
@@ -78,7 +106,7 @@
         <div class="card bg-danger text-white mb-4">
             <div class="card-body">
                 <h5 class="card-title">Gastos</h5>
-                <h2 class="mb-0">${{ gastos }}</h2>
+                <h2 class="mb-0">${{ gastos|floatformat:0|intcomma }}</h2>
             </div>
         </div>
     </div>
@@ -86,7 +114,7 @@
         <div class="card bg-primary text-white mb-4">
             <div class="card-body">
                 <h5 class="card-title">Balance</h5>
-                <h2 class="mb-0">${{ balance }}</h2>
+                <h2 class="mb-0">${{ balance|floatformat:0|intcomma }}</h2>
             </div>
         </div>
     </div>
@@ -106,6 +134,20 @@
     </div>
 </div>
 
+<!-- Gráfico de barras de ahorro por objetivo -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">Ahorro por Objetivo</h5>
+            </div>
+            <div class="card-body" style="height: 400px;">
+                <canvas id="ahorroChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
 <h2 class="mt-5 mb-3">Objetivos de Ahorro</h2>
 
 {% if objetivos %}
@@ -117,15 +159,15 @@
                 {{ objetivo.nombre }}
             </div>
             <div class="card-body">
-                <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo|floatformat:2 }}</strong></p>
-                <p>Monto actual: <strong>${{ objetivo.monto_actual|floatformat:2 }}</strong></p>
-                <div class="progress" style="height: 20px;">
+                <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo|floatformat:0|intcomma }}</strong></p>
+                <p>Monto actual: <strong>${{ objetivo.monto_actual|floatformat:0|intcomma }}</strong></p>
+                <div class="progress progress-inline">
                     {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
-                    <div class="progress-bar bg-secondary" role="progressbar"
-                        style="width: {{ progreso|floatformat:0 }}%"
-                        aria-valuenow="{{ objetivo.monto_actual }}"
-                        aria-valuemin="0"
-                        aria-valuemax="{{ objetivo.monto_objetivo }}">
+                    <div class="progress-bar progress-bar-inline progress-bar-secondary" role="progressbar"
+                         style="--progress-width: {{ progreso|floatformat:0 }}%;"
+                         aria-valuenow="{{ objetivo.monto_actual }}"
+                         aria-valuemin="0"
+                         aria-valuemax="{{ objetivo.monto_objetivo }}">
                         {{ progreso|floatformat:1 }}%
                     </div>
                     {% endwith %}
@@ -148,17 +190,19 @@
    style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
     <i class="fas fa-plus"></i>
 </a>
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de balance y gastos
     var ctx = document.getElementById('balanceChart');
     
     // Asegurarnos de que los valores sean números
     var balance = parseFloat('{{ balance|default:"0" }}') || 0;
-    var gastosCategorias = {{ gastos_categorias|safe }};
+    var gastosCategorias = JSON.parse('{{ gastos_categorias|safe }}');
     
     // Preparar datos para el gráfico
     var labels = ['Balance'];
@@ -174,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'rgba(253, 126, 20, 0.8)',  // Naranja
         'rgba(108, 117, 125, 0.8)'  // Gris
     ];
-    
+
     // Agregar gastos por categoría
     gastosCategorias.forEach(function(gasto, index) {
         labels.push(gasto.categoria);
@@ -224,6 +268,59 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         // Mostrar mensaje si no hay datos
         ctx.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay datos para mostrar</div>';
+    }
+
+    // Gráfico de ahorro por objetivo
+    var ctxAhorro = document.getElementById('ahorroChart');
+    var objetivosAhorro = JSON.parse('{{ objetivos_ahorro|safe }}');
+    
+    if (objetivosAhorro.length > 0) {
+        new Chart(ctxAhorro, {
+            type: 'bar',
+            data: {
+                labels: objetivosAhorro.map(obj => obj.nombre),
+                datasets: [
+                    {
+                        label: 'Monto Ahorrado',
+                        data: objetivosAhorro.map(obj => obj.monto_actual),
+                        backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString('es-CL');
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var label = context.dataset.label || '';
+                                var value = context.raw || 0;
+                                return `${label}: $${value.toLocaleString('es-CL')}`;
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    } else {
+        ctxAhorro.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay objetivos de ahorro registrados</div>';
     }
 });
 </script>

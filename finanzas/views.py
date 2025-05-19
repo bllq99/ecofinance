@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Transaccion, ObjetivoAhorro, Presupuesto, SerieRecurrente
 from .forms import TransaccionForm, ObjetivoForm, PresupuestoForm
 from django.db.models import Sum
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
 from datetime import datetime
@@ -10,6 +10,9 @@ from django.utils import timezone
 from itertools import groupby
 from django.utils.timezone import localtime
 from django.contrib.auth.decorators import login_required
+from django.utils.formats import number_format
+import json
+from decimal import Decimal
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
@@ -50,16 +53,29 @@ def dashboard(request):
         for item in gastos_por_categoria
     ]
     
-    balance = ingresos - gastos
+    balance = float(ingresos - gastos)
     
     # Obtener objetivos y calcular días restantes
     objetivos = ObjetivoAhorro.objects.filter(usuario=request.user)
     objetivos_por_vencer = []
     objetivos_vencidos = []
     
+    # Preparar datos para el gráfico de ahorro
+    objetivos_ahorro = []
+    total_ahorrado = 0
+    
     for objetivo in objetivos:
         # Calcular el progreso
-        progreso = (objetivo.monto_actual / objetivo.monto_objetivo * 100) if objetivo.monto_objetivo > 0 else 0
+        progreso = (float(objetivo.monto_actual) / float(objetivo.monto_objetivo) * 100) if objetivo.monto_objetivo > 0 else 0
+        
+        # Agregar datos para el gráfico
+        objetivos_ahorro.append({
+            'nombre': objetivo.nombre,
+            'monto_actual': float(objetivo.monto_actual),
+            'monto_objetivo': float(objetivo.monto_objetivo),
+            'progreso': round(progreso, 1)
+        })
+        total_ahorrado += float(objetivo.monto_actual)
         
         if objetivo.fecha_limite:
             dias_restantes = (objetivo.fecha_limite - fecha_actual).days
@@ -81,17 +97,19 @@ def dashboard(request):
     
     # Obtener el último presupuesto del usuario
     presupuesto = Presupuesto.objects.filter(usuario=request.user).last()
-    presupuesto_monto = presupuesto.monto if presupuesto else 0
+    presupuesto_monto = float(presupuesto.monto) if presupuesto else 0
 
     return render(request, 'finanzas/dashboard.html', {
-        'ingresos': ingresos,
-        'gastos': gastos,
+        'ingresos': float(ingresos),
+        'gastos': float(gastos),
         'balance': balance,
         'objetivos': objetivos,
         'presupuesto': presupuesto_monto,
         'objetivos_por_vencer': objetivos_por_vencer,
         'objetivos_vencidos': objetivos_vencidos,
-        'gastos_categorias': gastos_categorias
+        'gastos_categorias': json.dumps(gastos_categorias),
+        'objetivos_ahorro': json.dumps(objetivos_ahorro),
+        'total_ahorrado': float(total_ahorrado)
     })
 
 
@@ -264,17 +282,17 @@ def editar_objetivo(request, objetivo_id):
 
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        email = request.POST.get('email')
         password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, username=email, password=password)
         
         if user is not None:
             login(request, user)
-            return redirect('dashboard')  # Redirigimos al dashboard
+            messages.success(request, '¡Bienvenido! Has iniciado sesión correctamente.')
+            return redirect('dashboard')
         else:
-            return render(request, 'finanzas/login.html', {
-                'error': 'Usuario o contraseña incorrectos'
-            })
+            messages.error(request, 'Correo electrónico o contraseña incorrectos')
+            return render(request, 'finanzas/login.html')
     
     return render(request, 'finanzas/login.html')
 
@@ -337,3 +355,9 @@ def eliminar_transaccion(request, id):
     transaccion.delete()
     messages.success(request, "Transacción eliminada con éxito.")
     return redirect('lista_transacciones')
+
+
+def logout_view(request):
+    logout(request)
+    messages.success(request, 'Has cerrado sesión correctamente.')
+    return redirect('login')
