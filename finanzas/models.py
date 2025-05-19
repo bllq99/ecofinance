@@ -1,10 +1,7 @@
 from django.db import models
-<<<<<<< HEAD
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 import datetime
-=======
->>>>>>> origin/ecofinance_v3
 
 class Transaccion(models.Model):
     TIPO_CHOICES = [
