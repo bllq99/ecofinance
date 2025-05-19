@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Transaccion, ObjetivoAhorro, Presupuesto, SerieRecurrente
 from .forms import TransaccionForm, ObjetivoForm, PresupuestoForm
@@ -9,6 +10,12 @@ from datetime import datetime
 from django.utils import timezone
 from itertools import groupby
 from django.utils.timezone import localtime
+=======
+from django.shortcuts import render, redirect
+from .models import Transaccion, ObjetivoAhorro
+from .forms import TransaccionForm, ObjetivoForm
+from django.db.models import Sum
+>>>>>>> origin/ecofinance_v3
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
@@ -29,17 +36,12 @@ def dashboard(request):
     
     balance = ingresos - gastos
     objetivos = ObjetivoAhorro.objects.all()
-    
-    # Obtener el último presupuesto
-    presupuesto = Presupuesto.objects.last()
-    presupuesto_monto = presupuesto.monto if presupuesto else 0
 
     return render(request, 'finanzas/dashboard.html', {
         'ingresos': ingresos,
         'gastos': gastos,
         'balance': balance,
         'objetivos': objetivos,
-        'presupuesto': presupuesto_monto,
     })
 
 
@@ -176,6 +178,7 @@ def nuevo_objetivo(request):
     return render(request, 'finanzas/nuevo_objetivo.html', {
         'form': form
     })
+<<<<<<< HEAD
 
 
 def login_view(request):
@@ -249,3 +252,5 @@ def eliminar_transaccion(request, id):
     transaccion.delete()
     messages.success(request, "Transacción eliminada con éxito.")
     return redirect('lista_transacciones')  # Cambia 'lista_transacciones' por el nombre de tu vista principal
+=======
+>>>>>>> origin/ecofinance_v3

@@ -1,5 +1,4 @@
 {% extends 'finanzas/base.html' %}
-{% load custom_filters %}
 
 {% block title %}Dashboard{% endblock %}
 
@@ -52,18 +51,18 @@
                         {{ objetivo.nombre }}
                     </div>
                     <div class="card-body">
-                        <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo|floatformat:2 }}</strong></p>
-                        <p>Monto actual: <strong>${{ objetivo.monto_actual|floatformat:2 }}</strong></p>
-                        <div class="progress" style="height: 20px;">
-                            {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
-                            <div class="progress-bar bg-secondary" role="progressbar"
-                                style="width: {{ progreso|floatformat:0 }}%"
+                        <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo }}</strong></p>
+                        <p>Monto actual: <strong>${{ objetivo.monto_actual }}</strong></p>
+                        <div class="progress">
+                            {% with progreso=objetivo.monto_actual|divisibleby:objetivo.monto_objetivo %}
+                            {% endwith %}
+                            <div class="progress-bar" role="progressbar"
+                                style="width: {{ objetivo.monto_actual|floatformat:2|divisibleby:objetivo.monto_objetivo|floatformat:0 }}%;"
                                 aria-valuenow="{{ objetivo.monto_actual }}"
                                 aria-valuemin="0"
                                 aria-valuemax="{{ objetivo.monto_objetivo }}">
                                 {{ progreso|floatformat:1 }}%
                             </div>
-                            {% endwith %}
                         </div>
                         {% if objetivo.fecha_limite %}
                             <p class="mt-2 text-muted">Fecha límite: {{ objetivo.fecha_limite|date:"d/m/Y" }}</p>
