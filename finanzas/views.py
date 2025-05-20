@@ -1,45 +1,120 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Transaccion, ObjetivoAhorro, SerieRecurrente
-from .forms import TransaccionForm, ObjetivoForm
+from .models import Transaccion, ObjetivoAhorro, Presupuesto, SerieRecurrente
+from .forms import TransaccionForm, ObjetivoForm, PresupuestoForm
 from django.db.models import Sum
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
 from datetime import datetime
 from django.utils import timezone
 from itertools import groupby
 from django.utils.timezone import localtime
+from django.contrib.auth.decorators import login_required
+from django.utils.formats import number_format
+import json
+from decimal import Decimal
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
+@login_required
 def dashboard(request):
     # Obtener fecha actual
     fecha_actual = timezone.now().date()
     
-    # Filtrar transacciones para solo incluir las que han ocurrido hasta hoy
+    # Filtrar transacciones para solo incluir las que han ocurrido hasta hoy y pertenecen al usuario
     ingresos = Transaccion.objects.filter(
+        usuario=request.user,
         tipo='INGRESO', 
-        fecha__lte=fecha_actual  # Solo fechas menores o iguales a la actual
+        fecha__lte=fecha_actual
     ).aggregate(Sum('monto'))['monto__sum'] or 0
     
+    # Obtener gastos totales
     gastos = Transaccion.objects.filter(
+        usuario=request.user,
         tipo='GASTO',
-        fecha__lte=fecha_actual  # Solo fechas menores o iguales a la actual
+        fecha__lte=fecha_actual
     ).aggregate(Sum('monto'))['monto__sum'] or 0
     
-    balance = ingresos - gastos
-    objetivos = ObjetivoAhorro.objects.all()
+    # Obtener gastos por categoría
+    gastos_por_categoria = Transaccion.objects.filter(
+        usuario=request.user,
+        tipo='GASTO',
+        fecha__lte=fecha_actual
+    ).values('categoria').annotate(
+        total=Sum('monto')
+    ).order_by('-total')
+    
+    # Convertir a lista de diccionarios con categoría y monto
+    gastos_categorias = [
+        {
+            'categoria': item['categoria'] or 'Sin categoría',
+            'monto': float(item['total'])
+        }
+        for item in gastos_por_categoria
+    ]
+    
+    balance = float(ingresos - gastos)
+    
+    # Obtener objetivos y calcular días restantes
+    objetivos = ObjetivoAhorro.objects.filter(usuario=request.user)
+    objetivos_por_vencer = []
+    objetivos_vencidos = []
+    
+    # Preparar datos para el gráfico de ahorro
+    objetivos_ahorro = []
+    total_ahorrado = 0
+    
+    for objetivo in objetivos:
+        # Calcular el progreso
+        progreso = (float(objetivo.monto_actual) / float(objetivo.monto_objetivo) * 100) if objetivo.monto_objetivo > 0 else 0
+        
+        # Agregar datos para el gráfico
+        objetivos_ahorro.append({
+            'nombre': objetivo.nombre,
+            'monto_actual': float(objetivo.monto_actual),
+            'monto_objetivo': float(objetivo.monto_objetivo),
+            'progreso': round(progreso, 1)
+        })
+        total_ahorrado += float(objetivo.monto_actual)
+        
+        if objetivo.fecha_limite:
+            dias_restantes = (objetivo.fecha_limite - fecha_actual).days
+            if dias_restantes <= 10 and dias_restantes >= 0:
+                objetivos_por_vencer.append({
+                    'nombre': objetivo.nombre,
+                    'dias_restantes': dias_restantes,
+                    'progreso': round(progreso, 1)
+                })
+            elif dias_restantes < 0:
+                objetivos_vencidos.append({
+                    'nombre': objetivo.nombre,
+                    'dias_vencido': abs(dias_restantes),
+                    'progreso': round(progreso, 1)
+                })
+        
+        # Agregar el progreso al objeto objetivo para usarlo en el template
+        objetivo.progreso = round(progreso, 1)
+    
+    # Obtener el último presupuesto del usuario
+    presupuesto = Presupuesto.objects.filter(usuario=request.user).last()
+    presupuesto_monto = float(presupuesto.monto) if presupuesto else 0
 
     return render(request, 'finanzas/dashboard.html', {
-        'ingresos': ingresos,
-        'gastos': gastos,
+        'ingresos': float(ingresos),
+        'gastos': float(gastos),
         'balance': balance,
         'objetivos': objetivos,
+        'presupuesto': presupuesto_monto,
+        'objetivos_por_vencer': objetivos_por_vencer,
+        'objetivos_vencidos': objetivos_vencidos,
+        'gastos_categorias': json.dumps(gastos_categorias),
+        'objetivos_ahorro': json.dumps(objetivos_ahorro),
+        'total_ahorrado': float(total_ahorrado)
     })
 
 
-
 # 📄 Lista de transacciones
+@login_required
 def lista_transacciones(request):
     # Verificar si debemos mostrar transacciones futuras
     mostrar_futuras = 'mostrar_futuras' in request.GET
@@ -49,9 +124,9 @@ def lista_transacciones(request):
     
     # Filtrar transacciones según la preferencia
     if mostrar_futuras:
-        transacciones = Transaccion.objects.all().order_by('-fecha')
+        transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha')
     else:
-        transacciones = Transaccion.objects.filter(fecha__lte=fecha_actual).order_by('-fecha')
+        transacciones = Transaccion.objects.filter(usuario=request.user, fecha__lte=fecha_actual).order_by('-fecha')
     
     # Crear un diccionario para agrupar transacciones por mes
     transacciones_por_mes = {}
@@ -89,103 +164,135 @@ def lista_transacciones(request):
 
 
 # ➕ Crear nueva transacción
+@login_required
 def nueva_transaccion(request):
     if request.method == 'POST':
-        # Obtener datos del formulario
-        tipo = request.POST.get('tipo')
-        categoria = request.POST.get('categoria')
-        descripcion = request.POST.get('descripcion')
-        monto = request.POST.get('monto')
-        es_recurrente = 'esFijo' in request.POST
-        
-        # Si es recurrente, usar la fecha de inicio como fecha de la transacción original
-        if es_recurrente:
-            periodicidad = request.POST.get('periodicidad')
-            fecha_inicio_str = request.POST.get('fechaInicio')
-            fecha_fin_str = request.POST.get('fechaFin') or None
+        form = TransaccionForm(request.POST)
+        if form.is_valid():
+            transaccion = form.save(commit=False)
+            transaccion.usuario = request.user
+            transaccion.tipo = transaccion.tipo.upper()
             
-            # Convertir strings a objetos fecha
-            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date() if fecha_inicio_str else timezone.now().date()
-            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date() if fecha_fin_str else None
+            if transaccion.es_recurrente:
+                # Crear la serie recurrente
+                serie = SerieRecurrente.objects.create(usuario=request.user)
+                transaccion.serie_recurrente = serie
+                transaccion.fecha = transaccion.fecha_inicio
+                
+                # Guardar la transacción base
+                transaccion.save()
+                
+                # Generar las transacciones programadas
+                serie.generar_transacciones_programadas(transaccion)
+                
+                messages.success(request, 'Transacción recurrente creada correctamente. Se han programado las repeticiones según la periodicidad seleccionada.')
+            else:
+                transaccion.fecha = timezone.now()
+                transaccion.save()
+                messages.success(request, 'Transacción creada correctamente.')
             
-            # Crear la transacción con la fecha de inicio como la fecha de la transacción
-            nueva_transaccion = Transaccion(
-                tipo=tipo.upper(),
-                categoria=categoria,
-                descripcion=descripcion,
-                monto=monto,
-                fecha=fecha_inicio,  # Usar la fecha de inicio en lugar de now()
-                es_recurrente=es_recurrente,
-                periodicidad=periodicidad,
-                fecha_inicio=fecha_inicio,
-                fecha_fin=fecha_fin
-            )
-            
-            # Crear la serie recurrente
-            serie = SerieRecurrente.objects.create()
-            nueva_transaccion.serie_recurrente = serie
-            
-            # Guardar la transacción base
-            nueva_transaccion.save()
-            
-            # Generar las transacciones programadas
-            serie.generar_transacciones_programadas(nueva_transaccion)
-            
-            messages.success(request, f'Transacción recurrente creada correctamente. Se han programado las repeticiones según la periodicidad seleccionada.')
+            return redirect('lista_transacciones')
         else:
-            # Para transacciones no recurrentes, usar la fecha actual
-            nueva_transaccion = Transaccion(
-                tipo=tipo.upper(),
-                categoria=categoria,
-                descripcion=descripcion,
-                monto=monto,
-                fecha=timezone.now(),
-                es_recurrente=False
-            )
-            nueva_transaccion.save()
-            messages.success(request, 'Transacción creada correctamente.')
-        
-        return redirect('lista_transacciones')
-        
-    return render(request, 'finanzas/nueva_transaccion.html')
+            messages.error(request, 'Por favor, corrige los errores en el formulario.')
+    else:
+        form = TransaccionForm()
+
+    return render(request, 'finanzas/nueva_transaccion.html', {
+        'form': form
+    })
 
 
 # 📄 Lista de objetivos de ahorro
+@login_required
 def lista_objetivos(request):
-    objetivos = ObjetivoAhorro.objects.all().order_by('fecha_limite')
+    objetivos = ObjetivoAhorro.objects.filter(usuario=request.user).order_by('fecha_limite')
+    objetivos_por_vencer = []
+    objetivos_vencidos = []
+    fecha_actual = timezone.now().date()
+    
+    for objetivo in objetivos:
+        # Calcular el progreso
+        progreso = (objetivo.monto_actual / objetivo.monto_objetivo * 100) if objetivo.monto_objetivo > 0 else 0
+        objetivo.progreso = round(progreso, 1)
+        
+        if objetivo.fecha_limite:
+            dias_restantes = (objetivo.fecha_limite - fecha_actual).days
+            if dias_restantes <= 10 and dias_restantes >= 0:
+                objetivos_por_vencer.append({
+                    'nombre': objetivo.nombre,
+                    'dias_restantes': dias_restantes,
+                    'progreso': objetivo.progreso
+                })
+            elif dias_restantes < 0:
+                objetivos_vencidos.append({
+                    'nombre': objetivo.nombre,
+                    'dias_vencido': abs(dias_restantes),
+                    'progreso': objetivo.progreso
+                })
+    
     return render(request, 'finanzas/lista_objetivos.html', {
         'objetivos': objetivos,
+        'objetivos_por_vencer': objetivos_por_vencer,
+        'objetivos_vencidos': objetivos_vencidos,
+        'fecha_actual': fecha_actual
     })
 
 
 # ➕ Crear nuevo objetivo de ahorro
+@login_required
 def nuevo_objetivo(request):
     if request.method == 'POST':
         form = ObjetivoForm(request.POST)
         if form.is_valid():
-            form.save()
+            objetivo = form.save(commit=False)
+            objetivo.usuario = request.user
+            objetivo.save()
+            messages.success(request, f'¡Objetivo "{objetivo.nombre}" creado exitosamente!')
             return redirect('lista_objetivos')
+        else:
+            messages.error(request, 'Por favor, corrige los errores en el formulario.')
     else:
-        form = ObjetivoForm()
+        form = ObjetivoForm(initial={'monto_actual': 0})
 
     return render(request, 'finanzas/nuevo_objetivo.html', {
         'form': form
     })
 
 
+@login_required
+def editar_objetivo(request, objetivo_id):
+    objetivo = get_object_or_404(ObjetivoAhorro, id=objetivo_id, usuario=request.user)
+    
+    if request.method == 'POST':
+        form = ObjetivoForm(request.POST, instance=objetivo)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'¡Objetivo "{objetivo.nombre}" actualizado exitosamente!')
+            return redirect('lista_objetivos')
+        else:
+            messages.error(request, 'Por favor, corrige los errores en el formulario.')
+    else:
+        form = ObjetivoForm(instance=objetivo)
+
+    return render(request, 'finanzas/editar_objetivo.html', {
+        'form': form,
+        'objetivo': objetivo
+    })
+
+
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        email = request.POST.get('email')
         password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, username=email, password=password)
         
         if user is not None:
             login(request, user)
-            return redirect('dashboard')  # Redirigimos al dashboard
+            messages.success(request, '¡Bienvenido! Has iniciado sesión correctamente.')
+            return redirect('dashboard')
         else:
-            return render(request, 'finanzas/login.html', {
-                'error': 'Usuario o contraseña incorrectos'
-            })
+            messages.error(request, 'Correo electrónico o contraseña incorrectos')
+            return render(request, 'finanzas/login.html')
     
     return render(request, 'finanzas/login.html')
 
@@ -223,8 +330,34 @@ def registro_view(request):
 
     return render(request, 'finanzas/registro.html')
 
+
+@login_required
+def establecer_presupuesto(request):
+    if request.method == 'POST':
+        form = PresupuestoForm(request.POST)
+        if form.is_valid():
+            presupuesto = form.save(commit=False)
+            presupuesto.usuario = request.user
+            presupuesto.save()
+            messages.success(request, 'Presupuesto establecido correctamente')
+            return redirect('dashboard')
+    else:
+        form = PresupuestoForm()
+
+    return render(request, 'finanzas/establecer_presupuesto.html', {
+        'form': form
+    })
+
+
+@login_required
 def eliminar_transaccion(request, id):
-    transaccion = get_object_or_404(Transaccion, id=id)
+    transaccion = get_object_or_404(Transaccion, id=id, usuario=request.user)
     transaccion.delete()
     messages.success(request, "Transacción eliminada con éxito.")
-    return redirect('lista_transacciones') 
+    return redirect('lista_transacciones')
+
+
+def logout_view(request):
+    logout(request)
+    messages.success(request, 'Has cerrado sesión correctamente.')
+    return redirect('login')

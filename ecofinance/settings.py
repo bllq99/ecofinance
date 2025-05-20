@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'widget_tweaks',
+    'django.contrib.humanize',
     'finanzas'
 ]
 
@@ -100,6 +100,12 @@ LANGUAGE_CODE = 'es-cl'  # Cambiado a español de Chile
 TIME_ZONE = 'America/Santiago'  # Zona horaria de Chile
 USE_I18N = True
 USE_TZ = True
+USE_L10N = True  # Habilitar localización
+
+# Formato de números
+NUMBER_GROUPING = 3
+THOUSAND_SEPARATOR = '.'
+DECIMAL_SEPARATOR = ','
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
@@ -112,3 +118,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configuración de autenticación
+LOGIN_REDIRECT_URL = 'dashboard'  # Redirige al dashboard después del login
+LOGIN_URL = 'login'  # URL para la página de login
+
+# Backend de autenticación personalizado
+AUTHENTICATION_BACKENDS = [
+    'finanzas.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Mantener el backend por defecto como respaldo
+]

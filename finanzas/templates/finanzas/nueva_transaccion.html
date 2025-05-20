@@ -3,194 +3,122 @@
 {% block title %}Nueva Transacción{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-6 col-md-8 col-sm-12">
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="card-header bg-primary text-white text-center py-3">
-                    <h4 class="mb-0">Nueva Transacción</h4>
+<h1 class="mb-4">Registrar Nueva Transacción</h1>
+
+<form method="post" class="card p-4 bg-white shadow-sm">
+    {% csrf_token %}
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="{{ form.tipo.id_for_label }}" class="form-label">{{ form.tipo.label }}</label>
+            {{ form.tipo }}
+            {% if form.tipo.errors %}
+                <div class="invalid-feedback d-block">
+                    {{ form.tipo.errors }}
                 </div>
-                <form method="post" class="card-body p-4">
-                    {% csrf_token %}
-                    
-                    <div class="mb-4">
-                        <div class="form-floating">
-                            <select id="tipo" name="tipo" class="form-select" required>
-                                <option value="" disabled selected>Seleccione</option>
-                                <option value="ingreso">Ingreso</option>
-                                <option value="gasto">Gasto</option>
-                            </select>
-                            <label for="tipo">Tipo de Transacción</label>
-                        </div>
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            <label for="{{ form.categoria.id_for_label }}" class="form-label">{{ form.categoria.label }}</label>
+            {{ form.categoria }}
+            {% if form.categoria.errors %}
+                <div class="invalid-feedback d-block">
+                    {{ form.categoria.errors }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="{{ form.descripcion.id_for_label }}" class="form-label">{{ form.descripcion.label }}</label>
+            {{ form.descripcion }}
+            {% if form.descripcion.errors %}
+                <div class="invalid-feedback d-block">
+                    {{ form.descripcion.errors }}
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            <label for="{{ form.monto.id_for_label }}" class="form-label">{{ form.monto.label }}</label>
+            {{ form.monto }}
+            {% if form.monto.errors %}
+                <div class="invalid-feedback d-block">
+                    {{ form.monto.errors }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <div class="form-check">
+            {{ form.es_recurrente }}
+            <label class="form-check-label" for="{{ form.es_recurrente.id_for_label }}">
+                {{ form.es_recurrente.label }}
+            </label>
+        </div>
+    </div>
+
+    <div id="campos-recurrentes" style="display: none;">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="{{ form.periodicidad.id_for_label }}" class="form-label">{{ form.periodicidad.label }}</label>
+                {{ form.periodicidad }}
+                {% if form.periodicidad.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.periodicidad.errors }}
                     </div>
-                    
-                    <div class="mb-4">
-                        <div class="form-floating">
-                            <select id="categoria" name="categoria" class="form-select" required>
-                                <option value="" disabled selected>Primero seleccione un tipo</option>
-                            </select>
-                            <label for="categoria">Categoría</label>
-                        </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">{{ form.fecha_inicio.label }}</label>
+                {{ form.fecha_inicio }}
+                {% if form.fecha_inicio.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.fecha_inicio.errors }}
                     </div>
-                    
-                    <div class="mb-4">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="esFijo" name="esFijo">
-                            <label class="form-check-label" for="esFijo">¿Es un ingreso/gasto recurrente?</label>
-                        </div>
-                        <small id="recurrenteHelp" class="form-text text-muted d-none">
-                            Al marcar esta opción se crearán automáticamente transacciones futuras según la periodicidad seleccionada.
-                        </small>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.fecha_fin.id_for_label }}" class="form-label">{{ form.fecha_fin.label }}</label>
+                {{ form.fecha_fin }}
+                {% if form.fecha_fin.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.fecha_fin.errors }}
                     </div>
-                    
-                    <!-- Sección para transacciones recurrentes (inicialmente oculta) -->
-                    <div id="seccionRecurrente" class="mb-4 border p-3 rounded d-none animate__animated animate__fadeIn">
-                        <div class="mb-3">
-                            <label for="periodicidad" class="form-label">Periodicidad</label>
-                            <select id="periodicidad" name="periodicidad" class="form-select">
-                                <option value="diario">Diario</option>
-                                <option value="semanal">Semanal</option>
-                                <option value="quincenal">Quincenal</option>
-                                <option value="mensual" selected>Mensual</option>
-                                <option value="semestral">Semestral</option>
-                                <option value="anual">Anual</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="fechaInicio" class="form-label">Fecha de inicio</label>
-                            <input type="date" id="fechaInicio" name="fechaInicio" class="form-control" 
-                                   value="{% now 'Y-m-d' %}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="fechaFin" class="form-label">Fecha de finalización (opcional)</label>
-                            <input type="date" id="fechaFin" name="fechaFin" class="form-control">
-                        </div>
-                        <div id="advertenciaDiaria" class="alert alert-warning d-none">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <small>
-                                Para transacciones diarias, se crearán automáticamente hasta un máximo de 90 días para evitar sobrecargar el sistema.
-                            </small>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <div class="form-floating">
-                            <input type="number" id="monto" name="monto" class="form-control" placeholder="0.00" min="0" step="0.01" required>
-                            <label for="monto">Monto</label>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <div class="form-floating">
-                            <textarea id="descripcion" name="descripcion" class="form-control" placeholder="Descripción" style="resize: none; height: 100px;"></textarea>
-                            <label for="descripcion">Descripción</label>
-                        </div>
-                    </div>
-                    
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-4">
-                        <a href="{% url 'lista_transacciones' %}" class="btn btn-outline-secondary px-4 py-2">
-                            <i class="fas fa-arrow-left me-2"></i>Cancelar
-                        </a>
-                        <button type="submit" class="btn btn-primary px-4 py-2">
-                            <i class="fas fa-save me-2"></i>Guardar
-                        </button>
-                    </div>
-                </form>
+                {% endif %}
             </div>
         </div>
     </div>
-</div>
 
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="{% url 'lista_transacciones' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+
+{% block extra_js %}
 <script>
-    // Opciones de categorías
-    const categoriasIngreso = [
-        { value: "sueldo", text: "Sueldo" },
-        { value: "inversiones", text: "Inversiones" },
-        { value: "otros_ingresos", text: "Otros Ingresos" }
-    ];
-
-    const categoriasGasto = [
-        { value: "alimentacion", text: "Alimentación" },
-        { value: "transporte", text: "Transporte" },
-        { value: "entretenimiento", text: "Entretenimiento" },
-        { value: "salud", text: "Salud" },
-        { value: "vivienda", text: "Vivienda" },
-        { value: "educacion", text: "Educación" },
-        { value: "ropa", text: "Ropa" },
-        { value: "ahorro", text: "Ahorro" },
-        { value: "deudas", text: "Deudas" },
-        { value: "impuestos", text: "Impuestos" },
-        { value: "seguros", text: "Seguros" },
-        { value: "regalos", text: "Regalos" },
-        { value: "otros_gastos", text: "Otros Gastos" }
-    ];
-
-    // Referencias a los elementos del formulario
-    const tipoSelect = document.getElementById("tipo");
-    const categoriaSelect = document.getElementById("categoria");
-    const esFijoCheck = document.getElementById("esFijo");
-    const seccionRecurrente = document.getElementById("seccionRecurrente");
-    const periodicidadSelect = document.getElementById("periodicidad");
-    const advertenciaDiaria = document.getElementById("advertenciaDiaria");
-
-    // Actualizar las categorías según el tipo seleccionado
-    tipoSelect.addEventListener("change", function () {
-        // Limpiar las opciones actuales
-        categoriaSelect.innerHTML = '<option value="" disabled selected>Seleccione una categoría</option>';
-
-        // Obtener las categorías correspondientes
-        const categorias = this.value === "ingreso" ? categoriasIngreso : categoriasGasto;
-
-        // Agregar las nuevas opciones
-        categorias.forEach(categoria => {
-            const option = document.createElement("option");
-            option.value = categoria.value;
-            option.textContent = categoria.text;
-            categoriaSelect.appendChild(option);
-        });
-        
-        // Actualizar etiqueta del switch según el tipo seleccionado
-        esFijoCheck.nextElementSibling.textContent = `¿Es un ${this.value === "ingreso" ? "ingreso" : "gasto"} recurrente?`;
-        
-        // Añadir animación sutil
-        categoriaSelect.classList.add('animate__animated', 'animate__fadeIn');
-        setTimeout(() => {
-            categoriaSelect.classList.remove('animate__animated', 'animate__fadeIn');
-        }, 1000);
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    const esRecurrenteCheckbox = document.getElementById('{{ form.es_recurrente.id_for_label }}');
+    const camposRecurrentes = document.getElementById('campos-recurrentes');
     
-    // Mostrar/ocultar la sección de configuración de recurrencia
-    esFijoCheck.addEventListener("change", function() {
-        const helperText = document.getElementById("recurrenteHelp");
-        if (this.checked) {
-            seccionRecurrente.classList.remove("d-none");
-            helperText.classList.remove("d-none");
-            
-            // Verificar si está seleccionada la opción diaria
-            if (periodicidadSelect.value === "diario") {
-                advertenciaDiaria.classList.remove("d-none");
-            }
-        } else {
-            seccionRecurrente.classList.add("d-none");
-            helperText.classList.add("d-none");
-            advertenciaDiaria.classList.add("d-none");
-        }
-    });
+    function toggleCamposRecurrentes() {
+        camposRecurrentes.style.display = esRecurrenteCheckbox.checked ? 'block' : 'none';
+    }
     
-    // Mostrar advertencia si se selecciona periodicidad diaria
-    periodicidadSelect.addEventListener("change", function() {
-        if (this.value === "diario") {
-            advertenciaDiaria.classList.remove("d-none");
-        } else {
-            advertenciaDiaria.classList.add("d-none");
-        }
-    });
-    
-    // Establecer la fecha actual como valor predeterminado para la fecha de inicio
-    document.addEventListener("DOMContentLoaded", function() {
-        const today = new Date();
-        const formattedDate = today.toISOString().split('T')[0];
-        document.getElementById("fechaInicio").value = formattedDate;
-    });
+    esRecurrenteCheckbox.addEventListener('change', toggleCamposRecurrentes);
+    toggleCamposRecurrentes(); // Ejecutar al cargar la página
+});
 </script>
+{% endblock %}
 {% endblock %}

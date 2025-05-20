@@ -1,79 +1,187 @@
 {% extends 'finanzas/base.html' %}
-{% load custom_filters %}
+{% load finanzas_extras %}
+{% load humanize %}
+
 {% block title %}Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+.progress-inline {
+    width: 100px;
+    height: 4px;
+    vertical-align: middle;
+    display: inline-block;
+    margin-left: 0.5rem;
+}
+.progress-bar-inline {
+    height: 100%;
+}
+.progress-bar-danger {
+    background-color: #dc3545;
+}
+.progress-bar-warning {
+    background-color: #ffc107;
+}
+.progress-bar-secondary {
+    background-color: #6c757d;
+}
+.progress-bar-width {
+    width: var(--progress-width);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h1 class="mb-4 text-center">Resumen Financiero</h1>
+<h1 class="mb-4">Dashboard</h1>
+
+<div class="row mb-4">
+    {% if objetivos_vencidos %}
+    <div class="col-12">
+        <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong class="me-2">¡Objetivos vencidos!</strong>
+                {% for objetivo in objetivos_vencidos %}
+                <span class="me-3">
+                    {{ objetivo.nombre }} (vencido hace {{ objetivo.dias_vencido }} días)
+                    <div class="progress progress-inline">
+                        <div class="progress-bar progress-bar-inline progress-bar-danger" role="progressbar" 
+                             style="--progress-width: {{ objetivo.progreso }}%;"
+                             aria-valuenow="{{ objetivo.progreso }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </span>
+                {% endfor %}
+                <a href="{% url 'lista_objetivos' %}" class="btn btn-danger btn-sm ms-auto">
+                    <i class="fas fa-bullseye me-1"></i>Ver objetivos
+                </a>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if objetivos_por_vencer %}
+    <div class="col-12">
+        <div class="alert alert-warning alert-dismissible fade show py-2" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong class="me-2">¡Objetivos próximos a vencer!</strong>
+                {% for objetivo in objetivos_por_vencer %}
+                <span class="me-3">
+                    {{ objetivo.nombre }} (faltan {{ objetivo.dias_restantes }} días)
+                    <div class="progress progress-inline">
+                        <div class="progress-bar progress-bar-inline progress-bar-warning" role="progressbar" 
+                             style="--progress-width: {{ objetivo.progreso }}%;"
+                             aria-valuenow="{{ objetivo.progreso }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </span>
+                {% endfor %}
+                <a href="{% url 'lista_objetivos' %}" class="btn btn-warning btn-sm ms-auto">
+                    <i class="fas fa-bullseye me-1"></i>Ver objetivos
+                </a>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
 
 <!-- Resumen de ingresos, gastos y balance -->
-<div class="row text-center">
+<div class="row">
     <div class="col-md-4">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body text-bg-success rounded-3">
-                <i class="fas fa-wallet fa-3x mb-3"></i>
+        <div class="card bg-success text-white mb-4">
+            <div class="card-body">
                 <h5 class="card-title">Ingresos</h5>
-                <h3 class="fw-bold">{{ ingresos|formato_clp }}</h3>
-                <p class="text-white-50">Total de ingresos registrados</p>
+                <h2 class="mb-0">${{ ingresos|floatformat:0|intcomma }}</h2>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body text-bg-danger rounded-3">
-                <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+        <div class="card bg-danger text-white mb-4">
+            <div class="card-body">
                 <h5 class="card-title">Gastos</h5>
-                <h3 class="fw-bold">{{ gastos|formato_clp }}</h3>
-                <p class="text-white-50">Total de gastos registrados</p>
+                <h2 class="mb-0">${{ gastos|floatformat:0|intcomma }}</h2>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body text-bg-dark rounded-3">
-                <i class="fas fa-balance-scale fa-3x mb-3"></i>
+        <div class="card bg-primary text-white mb-4">
+            <div class="card-body">
                 <h5 class="card-title">Balance</h5>
-                <h3 class="fw-bold">{{ balance|formato_clp }}</h3>
-                <p class="text-white-50">Ingresos menos gastos</p>
+                <h2 class="mb-0">${{ balance|floatformat:0|intcomma }}</h2>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Objetivos de ahorro -->
-<h2 class="mt-5 mb-3 text-center">🎯 Objetivos de Ahorro</h2>
+<!-- Gráfico circular de balance y gastos -->
+<div class="row mb-4">
+    <div class="col-md-6 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">Distribución de Balance y Gastos por Categoría</h5>
+            </div>
+            <div class="card-body" style="height: 400px;">
+                <canvas id="balanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de barras de ahorro por objetivo -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">Ahorro por Objetivo</h5>
+            </div>
+            <div class="card-body" style="height: 400px;">
+                <canvas id="ahorroChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2 class="mt-5 mb-3">Objetivos de Ahorro</h2>
 
 {% if objetivos %}
-    <div class="row">
-        {% for objetivo in objetivos %}
-            <div class="col-md-6 mb-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-secondary text-white">
-                        {{ objetivo.nombre }}
-                    </div>
-                    <div class="card-body">
-                        <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo }}</strong></p>
-                        <p>Monto actual: <strong>${{ objetivo.monto_actual }}</strong></p>
-                        <div class="progress">
-                            {% with progreso=objetivo.monto_actual|divisibleby:objetivo.monto_objetivo %}
-                            {% endwith %}
-                            <div class="progress-bar" role="progressbar"
-                                style="width: {{ objetivo.monto_actual|floatformat:2|divisibleby:objetivo.monto_objetivo|floatformat:0 }}%;"
-                                aria-valuenow="{{ objetivo.monto_actual }}"
-                                aria-valuemin="0"
-                                aria-valuemax="{{ objetivo.monto_objetivo }}">
-                                {{ progreso|floatformat:1 }}%
-                            </div>
-                        </div>
-                        {% if objetivo.fecha_limite %}
-                            <p class="mt-2 text-muted">Fecha límite: {{ objetivo.fecha_limite|date:"d/m/Y" }}</p>
-                        {% endif %}
-                    </div>
-                </div>
+<div class="row">
+    {% for objetivo in objetivos %}
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-secondary text-white">
+                {{ objetivo.nombre }}
             </div>
-        {% endfor %}
+            <div class="card-body">
+                <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo|floatformat:0|intcomma }}</strong></p>
+                <p>Monto actual: <strong>${{ objetivo.monto_actual|floatformat:0|intcomma }}</strong></p>
+                <div class="progress progress-inline">
+                    {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
+                    <div class="progress-bar progress-bar-inline progress-bar-secondary" role="progressbar"
+                         style="--progress-width: {{ progreso|floatformat:0 }}%;"
+                         aria-valuenow="{{ objetivo.monto_actual }}"
+                         aria-valuemin="0"
+                         aria-valuemax="{{ objetivo.monto_objetivo }}">
+                        {{ progreso|floatformat:1 }}%
+                    </div>
+                    {% endwith %}
+                </div>
+                {% if objetivo.fecha_limite %}
+                    <p class="mt-2 text-muted">Fecha límite: {{ objetivo.fecha_limite|date:"d/m/Y" }}</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
+    {% endfor %}
+</div>
 {% else %}
-    <p class="text-center text-muted">No hay objetivos de ahorro registrados.</p>
+    <p>No hay objetivos de ahorro registrados.</p>
 {% endif %}
 
 <!-- Botón flotante para agregar transacción -->
@@ -83,4 +191,137 @@
     <i class="fas fa-plus"></i>
 </a>
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de balance y gastos
+    var ctx = document.getElementById('balanceChart');
+    
+    // Asegurarnos de que los valores sean números
+    var balance = parseFloat('{{ balance|default:"0" }}') || 0;
+    var gastosCategorias = JSON.parse('{{ gastos_categorias|safe }}');
+    
+    // Preparar datos para el gráfico
+    var labels = ['Balance'];
+    var data = [balance];
+    var backgroundColors = ['rgba(40, 167, 69, 0.8)']; // Verde para balance
+    
+    // Colores para las categorías de gastos
+    var coloresGastos = [
+        'rgba(220, 53, 69, 0.8)',   // Rojo
+        'rgba(255, 193, 7, 0.8)',   // Amarillo
+        'rgba(23, 162, 184, 0.8)',  // Azul claro
+        'rgba(111, 66, 193, 0.8)',  // Púrpura
+        'rgba(253, 126, 20, 0.8)',  // Naranja
+        'rgba(108, 117, 125, 0.8)'  // Gris
+    ];
+
+    // Agregar gastos por categoría
+    gastosCategorias.forEach(function(gasto, index) {
+        labels.push(gasto.categoria);
+        data.push(gasto.monto);
+        backgroundColors.push(coloresGastos[index % coloresGastos.length]);
+    });
+    
+    // Solo mostrar el gráfico si hay datos
+    if (balance > 0 || data.length > 1) {
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var label = context.label || '';
+                                var value = context.raw || 0;
+                                var total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                var percentage = ((value / total) * 100).toFixed(1);
+                                return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        // Mostrar mensaje si no hay datos
+        ctx.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay datos para mostrar</div>';
+    }
+
+    // Gráfico de ahorro por objetivo
+    var ctxAhorro = document.getElementById('ahorroChart');
+    var objetivosAhorro = JSON.parse('{{ objetivos_ahorro|safe }}');
+    
+    if (objetivosAhorro.length > 0) {
+        new Chart(ctxAhorro, {
+            type: 'bar',
+            data: {
+                labels: objetivosAhorro.map(obj => obj.nombre),
+                datasets: [
+                    {
+                        label: 'Monto Ahorrado',
+                        data: objetivosAhorro.map(obj => obj.monto_actual),
+                        backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString('es-CL');
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var label = context.dataset.label || '';
+                                var value = context.raw || 0;
+                                return `${label}: $${value.toLocaleString('es-CL')}`;
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    } else {
+        ctxAhorro.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay objetivos de ahorro registrados</div>';
+    }
+});
+</script>
 {% endblock %}
