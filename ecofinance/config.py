@@ -6,7 +6,7 @@ def get_config():
     """
     Lee la configuración desde config.ini
     """
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=None)
     config_path = os.path.join(os.path.dirname(__file__), '..', 'config.ini')
     
     if not os.path.exists(config_path):
