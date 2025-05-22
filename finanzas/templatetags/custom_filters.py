@@ -22,3 +22,15 @@ def subtract(value, arg):
         return float(value) - float(arg)
     except (ValueError, TypeError):
         return 0 
+    
+@register.filter
+def formato_clp(value):
+    """
+    Formatea un número como Pesos Chilenos (CLP).
+    Ejemplo: 1234567 -> $1.234.567
+    """
+    try:
+        value = int(value)  # Convertir a entero
+        return f"${value:,}".replace(",", ".")  # Agregar separadores de miles con puntos
+    except (ValueError, TypeError):
+        return value  # Si no es un número, devolver el valor original

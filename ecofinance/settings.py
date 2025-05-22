@@ -101,6 +101,7 @@ TIME_ZONE = 'America/Santiago'  # Zona horaria de Chile
 USE_I18N = True
 USE_TZ = True
 USE_L10N = True  # Habilitar localización
+USE_THOUSAND_SEPARATOR = True
 
 # Formato de números
 NUMBER_GROUPING = 3

@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.formats import number_format
 import json
 from decimal import Decimal
+from django.http import JsonResponse
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
@@ -364,3 +365,38 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'Has cerrado sesión correctamente.')
     return redirect('login')
+
+
+@login_required
+def establecer_balance_inicial(request):
+    # Verificar si ya existe un balance inicial
+    if Transaccion.objects.filter(usuario=request.user, descripcion="Balance Inicial").exists():
+        messages.error(request, 'Ya has establecido un balance inicial.')
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        balance_inicial = request.POST.get('balance_inicial')
+        try:
+            # Validar que el balance inicial sea un número válido
+            balance_inicial = float(balance_inicial)
+            if balance_inicial < 0:
+                messages.error(request, 'El balance inicial no puede ser negativo.')
+                return redirect('dashboard')
+
+            # Crear una transacción de tipo "INGRESO" para el balance inicial
+            Transaccion.objects.create(
+                usuario=request.user,
+                descripcion="Balance Inicial",
+                monto=balance_inicial,
+                tipo="INGRESO",
+                categoria="Balance Inicial",
+                fecha=timezone.now()
+            )
+
+            messages.success(request, '¡Balance inicial establecido correctamente!')
+            return redirect('dashboard')
+        except ValueError:
+            messages.error(request, 'Por favor, ingresa un número válido.')
+            return redirect('dashboard')
+    else:
+        return JsonResponse({'error': 'Método no permitido'}, status=405)

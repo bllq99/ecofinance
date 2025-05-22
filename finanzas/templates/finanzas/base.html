@@ -11,24 +11,54 @@
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
   <div class="container-fluid">
-    <a class="navbar-brand" href="{% url 'dashboard' %}">💰 Finanzas</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+    <!-- Logo y nombre de la aplicación -->
+    <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
+      EcoFinance
+    </a>
+    <!-- Botón para colapsar el menú en pantallas pequeñas -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
+    <!-- Contenido del navbar -->
     <div class="collapse navbar-collapse" id="navbarNav">
+      <!-- Menú principal -->
       <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'lista_transacciones' %}">Transacciones</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'lista_objetivos' %}">Objetivos</a></li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'dashboard' %}">
+            <i class="fas fa-chart-bar me-1"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'lista_transacciones' %}">
+            <i class="fas fa-list me-1"></i> Transacciones
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'lista_objetivos' %}">
+            <i class="fas fa-bullseye me-1"></i> Objetivos
+          </a>
+        </li>
       </ul>
+      <!-- Menú de usuario -->
       <div class="ms-auto">
         {% if user.is_authenticated %}
-          <span class="text-white me-3">¡Hola, {{ user.email }}!</span>
-          <a href="{% url 'logout' %}" class="btn btn-outline-light">Cerrar Sesión</a>
+          <div class="dropdown">
+            <a class="btn btn-outline-light dropdown-toggle" href="#" role="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fas fa-user-circle me-1"></i> {{ user.email }}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+              <li><a class="dropdown-item" ><i class="fas fa-user me-2"></i> Perfil</a></li>
+              <li><a class="dropdown-item" ><i class="fas fa-cog me-2"></i> Configuración</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión</a></li>
+            </ul>
+          </div>
         {% else %}
-          <a href="{% url 'login' %}" class="btn btn-primary">Iniciar Sesión</a>
+          <a href="{% url 'login' %}" class="btn btn-primary">
+            <i class="fas fa-sign-in-alt me-1"></i> Iniciar Sesión
+          </a>
         {% endif %}
       </div>
     </div>
@@ -36,6 +66,17 @@
 </nav>
 
 <div class="container">
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     {% block content %}
     <!-- Contenido individual de cada vista irá aquí -->
     {% endblock %}
@@ -43,7 +84,7 @@
 
 <footer class="text-center mt-5 mb-3 text-muted">
     <small>
-        &copy; 2025 Finanzas Personales. Todos los derechos reservados.
+        &copy; 2025 EcoFinance. Todos los derechos reservados.
     </small>
 </footer>
 

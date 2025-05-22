@@ -3,106 +3,145 @@
 {% block title %}Nueva Transacción{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Registrar Nueva Transacción</h1>
+<h1 class="mb-4 text-center">Registrar Nueva Transacción</h1>
+<p class="text-muted text-center">Completa los campos a continuación para registrar un ingreso o gasto.</p>
 
 <form method="post" class="card p-4 bg-white shadow-sm">
     {% csrf_token %}
     
-    <div class="row mb-3">
+    <!-- Tipo y Categoría -->
+    <div class="row mb-4">
         <div class="col-md-6">
-            <label for="{{ form.tipo.id_for_label }}" class="form-label">{{ form.tipo.label }}</label>
-            {{ form.tipo }}
-            {% if form.tipo.errors %}
-                <div class="invalid-feedback d-block">
-                    {{ form.tipo.errors }}
-                </div>
-            {% endif %}
+            <div class="card border-0 shadow-sm p-3">
+                <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                    <i class="fas fa-exchange-alt me-2"></i>{{ form.tipo.label }}
+                </label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.tipo.errors }}
+                    </div>
+                {% endif %}
+            </div>
         </div>
         <div class="col-md-6">
-            <label for="{{ form.categoria.id_for_label }}" class="form-label">{{ form.categoria.label }}</label>
-            {{ form.categoria }}
-            {% if form.categoria.errors %}
-                <div class="invalid-feedback d-block">
-                    {{ form.categoria.errors }}
-                </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="{{ form.descripcion.id_for_label }}" class="form-label">{{ form.descripcion.label }}</label>
-            {{ form.descripcion }}
-            {% if form.descripcion.errors %}
-                <div class="invalid-feedback d-block">
-                    {{ form.descripcion.errors }}
-                </div>
-            {% endif %}
-        </div>
-        <div class="col-md-6">
-            <label for="{{ form.monto.id_for_label }}" class="form-label">{{ form.monto.label }}</label>
-            {{ form.monto }}
-            {% if form.monto.errors %}
-                <div class="invalid-feedback d-block">
-                    {{ form.monto.errors }}
-                </div>
-            {% endif %}
+            <div class="card border-0 shadow-sm p-3">
+                <label for="{{ form.categoria.id_for_label }}" class="form-label">
+                    <i class="fas fa-tags me-2"></i>{{ form.categoria.label }}
+                </label>
+                {{ form.categoria }}
+                {% if form.categoria.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.categoria.errors }}
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
-    <div class="mb-3">
+    <!-- Descripción y Monto -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm p-3">
+                <label for="{{ form.descripcion.id_for_label }}" class="form-label">
+                    <i class="fas fa-pencil-alt me-2"></i>{{ form.descripcion.label }}
+                </label>
+                {{ form.descripcion }}
+                {% if form.descripcion.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.descripcion.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm p-3">
+                <label for="{{ form.monto.id_for_label }}" class="form-label">
+                    <i class="fas fa-dollar-sign me-2"></i>{{ form.monto.label }}
+                </label>
+                {{ form.monto }}
+                {% if form.monto.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.monto.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recurrente -->
+    <div class="card border-0 shadow-sm p-3 mb-4">
         <div class="form-check">
             {{ form.es_recurrente }}
             <label class="form-check-label" for="{{ form.es_recurrente.id_for_label }}">
-                {{ form.es_recurrente.label }}
+                <i class="fas fa-sync-alt me-2"></i>{{ form.es_recurrente.label }}
             </label>
         </div>
     </div>
 
+    <!-- Campos recurrentes -->
     <div id="campos-recurrentes" style="display: none;">
-        <div class="row mb-3">
+        <div class="row mb-4">
             <div class="col-md-6">
-                <label for="{{ form.periodicidad.id_for_label }}" class="form-label">{{ form.periodicidad.label }}</label>
-                {{ form.periodicidad }}
-                {% if form.periodicidad.errors %}
-                    <div class="invalid-feedback d-block">
-                        {{ form.periodicidad.errors }}
-                    </div>
-                {% endif %}
+                <div class="card border-0 shadow-sm p-3">
+                    <label for="{{ form.periodicidad.id_for_label }}" class="form-label">
+                        <i class="fas fa-calendar-alt me-2"></i>{{ form.periodicidad.label }}
+                    </label>
+                    {{ form.periodicidad }}
+                    {% if form.periodicidad.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.periodicidad.errors }}
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
-        <div class="row mb-3">
+        <div class="row mb-4">
             <div class="col-md-6">
-                <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">{{ form.fecha_inicio.label }}</label>
-                {{ form.fecha_inicio }}
-                {% if form.fecha_inicio.errors %}
-                    <div class="invalid-feedback d-block">
-                        {{ form.fecha_inicio.errors }}
-                    </div>
-                {% endif %}
+                <div class="card border-0 shadow-sm p-3">
+                    <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">
+                        <i class="fas fa-calendar-day me-2"></i>{{ form.fecha_inicio.label }}
+                    </label>
+                    {{ form.fecha_inicio }}
+                    {% if form.fecha_inicio.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.fecha_inicio.errors }}
+                        </div>
+                    {% endif %}
+                </div>
             </div>
             <div class="col-md-6">
-                <label for="{{ form.fecha_fin.id_for_label }}" class="form-label">{{ form.fecha_fin.label }}</label>
-                {{ form.fecha_fin }}
-                {% if form.fecha_fin.errors %}
-                    <div class="invalid-feedback d-block">
-                        {{ form.fecha_fin.errors }}
-                    </div>
-                {% endif %}
+                <div class="card border-0 shadow-sm p-3">
+                    <label for="{{ form.fecha_fin.id_for_label }}" class="form-label">
+                        <i class="fas fa-calendar-check me-2"></i>{{ form.fecha_fin.label }}
+                    </label>
+                    {{ form.fecha_fin }}
+                    {% if form.fecha_fin.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.fecha_fin.errors }}
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Errores generales -->
     {% if form.non_field_errors %}
         <div class="alert alert-danger">
             {{ form.non_field_errors }}
         </div>
     {% endif %}
 
-    <div class="mt-4">
-        <button type="submit" class="btn btn-primary">Guardar</button>
-        <a href="{% url 'lista_transacciones' %}" class="btn btn-secondary">Cancelar</a>
+    <!-- Botones -->
+    <div class="mt-4 text-center">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-save me-2"></i>Guardar
+        </button>
+        <a href="{% url 'lista_transacciones' %}" class="btn btn-secondary btn-lg">
+            <i class="fas fa-times me-2"></i>Cancelar
+        </a>
     </div>
 </form>
 

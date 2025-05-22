@@ -1,6 +1,6 @@
 {% extends 'finanzas/base.html' %}
 {% load humanize %}
-
+{% load custom_filters %}
 {% block title %}Transacciones{% endblock %}
 
 {% block content %}
@@ -10,12 +10,6 @@
     <a href="{% url 'nueva_transaccion' %}" class="btn btn-success">
         <i class="fas fa-plus me-1"></i> Nueva Transacción
     </a>
-    <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" id="mostrarFuturas" 
-               {% if request.GET.mostrar_futuras %}checked{% endif %}
-               onchange="window.location.href='?mostrar_futuras=' + this.checked">
-        <label class="form-check-label" for="mostrarFuturas">Mostrar transacciones futuras</label>
-    </div>
 </div>
 
 {% if meses %}
@@ -24,8 +18,8 @@
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">{{ mes_data.nombre }}</h5>
             <div>
-                <span class="badge bg-success me-2">Ingresos: ${{ mes_data.total_ingresos|floatformat:0|intcomma }}</span>
-                <span class="badge bg-danger">Gastos: ${{ mes_data.total_gastos|floatformat:0|intcomma }}</span>
+                <span class="badge bg-success me-2">Ingresos: {{ mes_data.total_ingresos|formato_clp }}</span>
+                <span class="badge bg-danger">Gastos: {{ mes_data.total_gastos|formato_clp }}</span>
             </div>
         </div>
         <div class="card-body p-0">
@@ -55,16 +49,37 @@
                                 {% endif %}
                             </td>
                             <td class="{% if transaccion.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
-                                ${{ transaccion.monto|floatformat:0|intcomma }}
+                                {{ transaccion.monto|formato_clp }}
                             </td>
                             <td>
-                                <a href="{% url 'eliminar_transaccion' transaccion.id %}" 
-                                   class="btn btn-danger btn-sm"
-                                   onclick="return confirm('¿Estás seguro de que deseas eliminar esta transacción?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
+                                <!-- Botón de eliminar -->
+                                <button class="btn btn-sm btn-danger ms-2" data-bs-toggle="modal" data-bs-target="#deleteModal{{ transaccion.id }}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
                             </td>
                         </tr>
+
+                        <!-- Modal de confirmación -->
+                        <div class="modal fade" id="deleteModal{{ transaccion.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ transaccion.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="deleteModalLabel{{ transaccion.id }}">Confirmar eliminación</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        ¿Estás seguro de que deseas eliminar esta transacción?
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <form method="POST" action="{% url 'eliminar_transaccion' transaccion.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         {% endfor %}
                     </tbody>
                 </table>
