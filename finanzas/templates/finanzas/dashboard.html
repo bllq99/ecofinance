@@ -121,20 +121,23 @@
 </div>
 
 <!-- Gráfico circular de balance y gastos -->
-<div class="row mb-4">
-    <div class="col-md-6 mx-auto">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h5 class="card-title mb-0">Distribución de Balance y Gastos por Categoría</h5>
-            </div>
-            <div class="card-body" style="height: 400px;">
-                <canvas id="balanceChart"></canvas>
+ {% if cantidad_transacciones > 0 %}
+    <div class="row mb-4">
+        <div class="col-md-6 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Distribución de Balance y Gastos por Categoría</h5>
+                </div>
+                <div class="card-body" style="height: 400px;">
+                    <canvas id="balanceChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
-</div>
+    {% endif %}
 
 <!-- Gráfico de barras de ahorro por objetivo -->
+ {% if cantidad_transacciones > 0 %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="card shadow-sm">
@@ -147,6 +150,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <h2 class="mt-5 mb-3">Objetivos de Ahorro</h2>
 

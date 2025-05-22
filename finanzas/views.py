@@ -21,6 +21,9 @@ def dashboard(request):
     # Obtener fecha actual
     fecha_actual = timezone.now().date()
     
+    # Obtener ingresos totales
+    cantidad_transacciones = Transaccion.objects.filter(usuario=request.user).count()
+
     # Filtrar transacciones para solo incluir las que han ocurrido hasta hoy y pertenecen al usuario
     ingresos = Transaccion.objects.filter(
         usuario=request.user,
@@ -299,7 +302,7 @@ def login_view(request):
 
 def registro_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        nombre = request.POST.get('nombre')
         email = request.POST.get('email')
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
@@ -309,23 +312,23 @@ def registro_view(request):
                 'error': 'Las contraseñas no coinciden'
             })
 
-        if User.objects.filter(username=username).exists():
-            return render(request, 'finanzas/registro.html', {
-                'error': 'El nombre de usuario ya existe'
-            })
-
-        if User.objects.filter(email=email).exists():
+        if User.objects.filter(username=email).exists():
             return render(request, 'finanzas/registro.html', {
                 'error': 'El correo electrónico ya está registrado'
             })
 
         try:
-            user = User.objects.create_user(username=username, email=email, password=password1)
+            user = User.objects.create_user(username=email, email=email, password=password1)
+            user.first_name = nombre
+            user.save()            
+            # Usa authenticate antes de login para obtener el backend
+            user = authenticate(request, username=email, password=password1)
             login(request, user)
+            
             return redirect('dashboard')
         except Exception as e:
             return render(request, 'finanzas/registro.html', {
-                'error': 'Error al crear el usuario. Por favor, inténtalo de nuevo.'
+                'error': 'Error al crear el usuario. Por favor, inténtalo de nuevo. ' + str(e)
             })
 
     return render(request, 'finanzas/registro.html')
