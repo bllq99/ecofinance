@@ -13,7 +13,15 @@ from django.contrib.auth.decorators import login_required
 from django.utils.formats import number_format
 import json
 from decimal import Decimal, InvalidOperation
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+import csv
+from django.utils.encoding import smart_str
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from io import BytesIO
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
@@ -449,3 +457,108 @@ def eliminar_objetivo(request, objetivo_id):
         messages.success(request, f'El objetivo "{nombre}" ha sido eliminado correctamente.')
         return redirect('lista_objetivos')
     return redirect('lista_objetivos')
+
+@login_required
+def descargar_transacciones(request):
+    # Obtener todas las transacciones del usuario
+    transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha')
+    
+    # Crear la respuesta HTTP con el archivo CSV
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response['Content-Disposition'] = 'attachment; filename="transacciones.csv"'
+    
+    # Crear el escritor CSV con punto y coma como separador
+    writer = csv.writer(response, delimiter=';')
+    
+    # Escribir la cabecera
+    writer.writerow(['Fecha', 'Descripción', 'Categoría', 'Tipo', 'Monto'])
+    
+    # Escribir las transacciones
+    for transaccion in transacciones:
+        writer.writerow([
+            transaccion.fecha.strftime('%d/%m/%Y'),
+            smart_str(transaccion.descripcion),
+            smart_str(transaccion.categoria or 'Sin categoría'),
+            transaccion.tipo,
+            f"${transaccion.monto:,.0f}".replace(',', '.')
+        ])
+    
+    return response
+
+@login_required
+def descargar_transacciones_pdf(request):
+    # Obtener todas las transacciones del usuario
+    transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha')
+    
+    # Crear el buffer para el PDF
+    buffer = BytesIO()
+    
+    # Crear el documento PDF
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+    
+    # Estilos
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        spaceAfter=30
+    )
+    
+    # Título
+    elements.append(Paragraph("Historial de Transacciones", title_style))
+    elements.append(Spacer(1, 20))
+    
+    # Preparar datos para la tabla
+    data = [['Fecha', 'Descripción', 'Categoría', 'Tipo', 'Monto']]
+    
+    for transaccion in transacciones:
+        data.append([
+            transaccion.fecha.strftime('%d/%m/%Y'),
+            transaccion.descripcion,
+            transaccion.categoria or 'Sin categoría',
+            transaccion.tipo,
+            f"${transaccion.monto:,.0f}".replace(',', '.')
+        ])
+    
+    # Crear la tabla
+    table = Table(data)
+    
+    # Estilo de la tabla
+    table_style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ALIGN', (4, 1), (4, -1), 'RIGHT'),  # Alinear montos a la derecha
+    ])
+    
+    # Aplicar estilos alternados a las filas
+    for i in range(1, len(data)):
+        if i % 2 == 0:
+            table_style.add('BACKGROUND', (0, i), (-1, i), colors.lightgrey)
+    
+    table.setStyle(table_style)
+    elements.append(table)
+    
+    # Construir el PDF
+    doc.build(elements)
+    
+    # Obtener el valor del buffer
+    pdf = buffer.getvalue()
+    buffer.close()
+    
+    # Crear la respuesta HTTP
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="transacciones.pdf"'
+    response.write(pdf)
+    
+    return response
