@@ -142,70 +142,105 @@
     </div>
 </div>
 
-<!-- Gráfico circular de balance y gastos -->
-    <div class="row mb-4">
-        <div class="col-md-6 mx-auto">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="card-title mb-0">Distribución de Gastos por Categoría</h5>
-                </div>
-                <div class="card-body" style="height: 400px;">
-                    <canvas id="balanceChart"></canvas>
-                </div>
+<!-- Gráfico circular de balance y últimas transacciones -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">Distribución de Gastos por Categoría</h5>
+            </div>
+            <div class="card-body" style="height: 400px;">
+                <canvas id="balanceChart"></canvas>
             </div>
         </div>
     </div>
-
-
-<!-- Gráfico de barras de ahorro por objetivo -->
-<div class="row mb-4">
-    <div class="col-12">
+    <div class="col-md-6">
         <div class="card shadow-sm">
             <div class="card-header bg-white">
-                <h5 class="card-title mb-0">Ahorro por Objetivo</h5>
+                <h5 class="card-title mb-0">Últimas Transacciones</h5>
             </div>
-            <div class="card-body" style="height: 400px;">
-                <canvas id="ahorroChart"></canvas>
+            <div class="card-body" style="height: 400px; overflow-y: auto;">
+                <div class="list-group">
+                    {% for transaccion in ultimas_transacciones %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ transaccion.descripcion }}</h6>
+                            <small>{{ transaccion.fecha|date:"d/m/Y" }}</small>
+                        </div>
+                        <p class="mb-1">
+                            <span class="badge {% if transaccion.tipo == 'INGRESO' %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ transaccion.tipo }}
+                            </span>
+                            <span class="fw-bold {% if transaccion.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
+                                {{ transaccion.monto|intcomma }}
+                            </span>
+                        </p>
+                        <small class="text-muted">{{ transaccion.categoria|default:"Sin categoría" }}</small>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item text-center text-muted">No hay transacciones recientes.</div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<h2 class="mt-5 mb-3">Objetivos de Ahorro</h2>
-
-{% if objetivos %}
-<div class="row">
-    {% for objetivo in objetivos %}
-    <div class="col-md-6 mb-4">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-secondary text-white">
-                {{ objetivo.nombre }}
+<!-- Lista de objetivos de ahorro -->
+<div class="row mb-3">
+    <!-- Gráfico de gastos por mes a la izquierda -->
+    <div class="col-12 col-md-6 mb-3 mb-md-0">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-2">
+                <h5 class="card-title mb-0">Gastos por Mes</h5>
             </div>
-            <div class="card-body">
-                <p>Monto objetivo: <strong class="text-dark">{{ objetivo.monto_objetivo|formato_clp }}</strong></p>
-                <p>Monto actual: <strong class="text-dark">{{ objetivo.monto_actual|formato_clp }}</strong></p>
-                <div class="progress progress-inline">
-                    {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
-                    <div class="progress-bar progress-bar-inline progress-bar-secondary" role="progressbar"
-                         style="--progress-width: {{ progreso|floatformat:0 }}%;"
-                         aria-valuenow="{{ objetivo.monto_actual }}"
-                         aria-valuemin="0"
-                         aria-valuemax="{{ objetivo.monto_objetivo }}">
-                        {{ progreso|floatformat:1 }}%
-                    </div>
-                    {% endwith %}
+            <div class="card-body p-2" style="min-height: 220px; overflow-x: auto;">
+                <div style="min-width: 320px;">
+                    <canvas id="gastosMesChart"></canvas>
                 </div>
-                {% if objetivo.fecha_limite %}
-                    <p class="mt-2 text-muted">Fecha límite: {{ objetivo.fecha_limite|date:"d/m/Y" }}</p>
+            </div>
+        </div>
+    </div>
+    <!-- Objetivos de ahorro a la derecha -->
+    <div class="col-12 col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-2">
+                <h5 class="card-title mb-0">Objetivos de Ahorro</h5>
+                <small class="text-muted">(Mostrando solo los primeros 3 objetivos)</small>
+            </div>
+            <div class="card-body p-2" style="min-height: 120px; max-height: 400px; overflow-y: auto;">
+                {% if objetivos %}
+                    <ul class="list-group">
+                        {% for objetivo in objetivos|slice:":3" %}
+                        <li class="list-group-item py-2 px-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold">{{ objetivo.nombre }}</span>
+                                <span class="text-muted small">{{ objetivo.fecha_limite|date:"d/m/Y" }}</span>
+                            </div>
+                            <div class="mb-1">
+                                <span class="text-dark">Ahorro: </span>
+                                <span class="fw-bold">{{ objetivo.monto_actual|formato_clp }}</span>
+                                <span class="text-muted">/ {{ objetivo.monto_objetivo|formato_clp }}</span>
+                            </div>
+                            <div class="progress" style="height: 18px;">
+                                {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
+                                <div class="progress-bar {% if progreso >= 100 %}bg-success{% elif progreso >= 75 %}bg-info{% elif progreso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar"
+                                     style="width: {{ progreso|floatformat:1 }}%;"
+                                     aria-valuenow="{{ progreso|floatformat:1 }}" aria-valuemin="0" aria-valuemax="100">
+                                    {{ progreso|floatformat:1 }}%
+                                </div>
+                                {% endwith %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-center text-muted">No hay objetivos de ahorro registrados.</div>
                 {% endif %}
             </div>
         </div>
     </div>
-    {% endfor %}
 </div>
-{% else %}
-    <p>No hay objetivos de ahorro registrados.</p>
-{% endif %}
 
 {% else %}
 <!-- Guía para establecer balance inicial -->
@@ -236,6 +271,7 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Gráfico de gastos por categoría
@@ -266,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function() {
         backgroundColors.push(coloresGastos[index % coloresGastos.length]);
     });
     
-    // Solo mostrar el gráfico si hay datos
+    // Crear el gráfico de gastos por categoría
     if (data.length > 0) {
         new Chart(ctx, {
             type: 'pie',
@@ -298,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 var value = context.raw || 0;
                                 var total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 var percentage = ((value / total) * 100).toFixed(1);
-                                return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                                return `${label}: $${value.toLocaleString('es-CL', {maximumFractionDigits: 0})} (${percentage}%)`;
                             }
                         }
                     }
@@ -309,59 +345,53 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mostrar mensaje si no hay datos
         ctx.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay datos de gastos para mostrar</div>';
     }
+});
 
-    // Gráfico de ahorro por objetivo
-    var ctxAhorro = document.getElementById('ahorroChart');
-    var objetivosAhorro = JSON.parse('{{ objetivos_ahorro|safe }}');
-    
-    if (objetivosAhorro.length > 0) {
-        new Chart(ctxAhorro, {
-            type: 'bar',
-            data: {
-                labels: objetivosAhorro.map(obj => obj.nombre),
-                datasets: [
-                    {
-                        label: 'Monto Ahorrado',
-                        data: objetivosAhorro.map(obj => obj.monto_actual),
-                        backgroundColor: 'rgba(40, 167, 69, 0.8)',
-                        borderColor: 'rgba(40, 167, 69, 1)',
-                        borderWidth: 1
+// Gráfico de gastos por mes
+var ctxGM = document.getElementById('gastosMesChart');
+var labelsGastosMes = {{ meses_gastos|safe }};
+var dataGastosMes = {{ gastos_por_mes|safe }};
+var mesMaxGasto = "{{ mes_max_gasto }}";
+
+if (labelsGastosMes.length > 0) {
+    new Chart(ctxGM, {
+        type: 'bar',
+        data: {
+            labels: labelsGastosMes,
+            datasets: [{
+                label: 'Gasto mensual',
+                data: dataGastosMes,
+                backgroundColor: 'rgba(220, 53, 69, 0.7)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            var value = context.raw || 0;
+                            return 'Gasto: $' + value.toLocaleString('es-CL', {maximumFractionDigits: 0});
+                        }
                     }
-                ]
+                }
             },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + value.toLocaleString('es-CL');
-                            }
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString('es-CL', {maximumFractionDigits: 0});
                         }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                var label = context.dataset.label || '';
-                                var value = context.raw || 0;
-                                return `${label}: $${value.toLocaleString('es-CL')}`;
-                            }
-                        }
-                    },
-                    legend: {
-                        display: false
                     }
                 }
             }
-        });
-    } else {
-        ctxAhorro.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay objetivos de ahorro registrados</div>';
-    }
-});
+        }
+    });
+} else {
+    ctxGM.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay gastos registrados.</div>';
+}
 </script>
 {% endblock %}

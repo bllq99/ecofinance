@@ -22,6 +22,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from io import BytesIO
+from django.db.models.functions import TruncDay, TruncMonth
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
@@ -111,6 +112,67 @@ def dashboard(request):
     presupuesto = Presupuesto.objects.filter(usuario=request.user).last()
     presupuesto_monto = float(presupuesto.monto) if presupuesto else 0
 
+    # Obtener las últimas 4 transacciones
+    ultimas_transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha')[:4]
+
+    # Obtener el mes y año actual
+    mes_actual = fecha_actual.month
+    anio_actual = fecha_actual.year
+
+    # Filtrar gastos del mes actual y agrupar por día
+    gastos_dia = (
+        Transaccion.objects
+        .filter(usuario=request.user, tipo='GASTO', fecha__year=anio_actual, fecha__month=mes_actual)
+        .annotate(dia=TruncDay('fecha'))
+        .values('dia')
+        .annotate(total=Sum('monto'))
+        .order_by('dia')
+    )
+
+    # Preparar datos para el gráfico
+    dias_mes = []
+    gastos_por_dia = []
+
+    for gasto in gastos_dia:
+        dias_mes.append(gasto['dia'].strftime('%d/%m'))
+        gastos_por_dia.append(float(gasto['total']))
+
+    # Agrupar gastos por mes
+    gastos_mes = (
+        Transaccion.objects
+        .filter(usuario=request.user, tipo='GASTO')
+        .annotate(mes=TruncMonth('fecha'))
+        .values('mes')
+        .annotate(total=Sum('monto'))
+        .order_by('mes')
+    )
+
+    meses_gastos = []
+    gastos_por_mes = []
+    max_gasto = 0
+    mes_max_gasto = ""
+
+    for gasto in gastos_mes:
+        mes_str = gasto['mes'].strftime('%b %Y')
+        meses_gastos.append(mes_str)
+        monto = float(gasto['total'])
+        gastos_por_mes.append(monto)
+        if monto > max_gasto:
+            max_gasto = monto
+            mes_max_gasto = mes_str
+
+    # Tomar solo los últimos 3 meses
+    meses_gastos = meses_gastos[-3:]
+    gastos_por_mes = gastos_por_mes[-3:]
+
+    # Recalcular el mes de mayor gasto en este subconjunto
+    max_gasto = 0
+    mes_max_gasto = ""
+    for i, monto in enumerate(gastos_por_mes):
+        if monto > max_gasto:
+            max_gasto = monto
+            mes_max_gasto = meses_gastos[i]
+
     return render(request, 'finanzas/dashboard.html', {
         'ingresos': float(ingresos),
         'gastos': float(gastos),
@@ -121,7 +183,15 @@ def dashboard(request):
         'objetivos_vencidos': objetivos_vencidos,
         'gastos_categorias': json.dumps(gastos_categorias),
         'objetivos_ahorro': json.dumps(objetivos_ahorro),
-        'total_ahorrado': float(total_ahorrado)
+        'total_ahorrado': float(total_ahorrado),
+        'ultimas_transacciones': ultimas_transacciones,
+        'gastos_dias_labels': dias_mes,
+        'gastos_dias_data': gastos_por_dia,
+        'meses_gastos': meses_gastos,
+        'gastos_por_mes': gastos_por_mes,
+        'mes_max_gasto': mes_max_gasto,
+        'max_gasto': max_gasto,
+        'fecha_actual': fecha_actual,
     })
 
 
