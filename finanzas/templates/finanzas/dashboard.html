@@ -147,7 +147,7 @@
         <div class="col-md-6 mx-auto">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h5 class="card-title mb-0">Distribución de Balance y Gastos por Categoría</h5>
+                    <h5 class="card-title mb-0">Distribución de Gastos por Categoría</h5>
                 </div>
                 <div class="card-body" style="height: 400px;">
                     <canvas id="balanceChart"></canvas>
@@ -238,17 +238,16 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gráfico de balance y gastos
+    // Gráfico de gastos por categoría
     var ctx = document.getElementById('balanceChart');
     
-    // Asegurarnos de que los valores sean números
-    var balance = parseFloat('{{ balance|default:"0" }}') || 0;
+    // Obtener datos de gastos por categoría
     var gastosCategorias = JSON.parse('{{ gastos_categorias|safe }}');
     
     // Preparar datos para el gráfico
-    var labels = ['Balance'];
-    var data = [balance];
-    var backgroundColors = ['rgba(40, 167, 69, 0.8)']; // Verde para balance
+    var labels = [];
+    var data = [];
+    var backgroundColors = [];
     
     // Colores para las categorías de gastos
     var coloresGastos = [
@@ -268,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Solo mostrar el gráfico si hay datos
-    if (balance > 0 || data.length > 1) {
+    if (data.length > 0) {
         new Chart(ctx, {
             type: 'pie',
             data: {
@@ -308,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     } else {
         // Mostrar mensaje si no hay datos
-        ctx.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay datos para mostrar</div>';
+        ctx.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay datos de gastos para mostrar</div>';
     }
 
     // Gráfico de ahorro por objetivo
