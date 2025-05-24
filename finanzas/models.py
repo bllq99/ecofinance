@@ -3,6 +3,8 @@ from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 import datetime
 from django.contrib.auth.models import User
+from django.utils.timezone import now
+from django.core.exceptions import ValidationError
 
 class Transaccion(models.Model):
     TIPO_CHOICES = [
@@ -14,16 +16,22 @@ class Transaccion(models.Model):
     descripcion = models.CharField(max_length=255)
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
-    fecha = models.DateField(auto_now_add=True)
+    fecha = models.DateField(default=timezone.now)
     categoria = models.CharField(max_length=100, blank=True, null=True)
     es_recurrente = models.BooleanField(default=False)
-    periodicidad = models.CharField(max_length=20, blank=True, null=True)
-    fecha_inicio = models.DateField(null=True, blank=True)
+    periodicidad = models.CharField(max_length=10, null=True, blank=True)
     fecha_fin = models.DateField(null=True, blank=True)
+    fecha_inicio = models.DateField(default=now)  # La fecha actual se asignará automáticamente
     serie_recurrente = models.ForeignKey('SerieRecurrente', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f"{self.descripcion} - {self.tipo} - ${self.monto}"
+
+    def clean(self):
+        if self.es_recurrente and not self.fecha_inicio:
+            self.fecha_inicio = now()
+        if self.es_recurrente and not self.periodicidad:
+            raise ValidationError("Debes especificar una periodicidad para transacciones recurrentes.")
 
 class SerieRecurrente(models.Model):
     """

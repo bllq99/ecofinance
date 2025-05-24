@@ -1,143 +1,83 @@
 {% extends 'finanzas/base.html' %}
-
+{% load custom_filters %}
 {% block title %}Nueva Transacción{% endblock %}
 
 {% block content %}
-<h1 class="mb-4 text-center">Registrar Nueva Transacción</h1>
-<p class="text-muted text-center">Completa los campos a continuación para registrar un ingreso o gasto.</p>
+<h1 class="mb-4 text-center">Registrar Transacción</h1>
 
 <form method="post" class="card p-4 bg-white shadow-sm">
     {% csrf_token %}
     
-    <!-- Tipo y Categoría -->
+    <!-- Monto y Descripción -->
     <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm p-3">
-                <label for="{{ form.tipo.id_for_label }}" class="form-label">
-                    <i class="fas fa-exchange-alt me-2"></i>{{ form.tipo.label }}
-                </label>
-                {{ form.tipo }}
-                {% if form.tipo.errors %}
-                    <div class="invalid-feedback d-block">
-                        {{ form.tipo.errors }}
-                    </div>
-                {% endif %}
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="monto" class="form-label">Monto</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" name="monto" id="monto" class="form-control" placeholder="0" required>
+                </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm p-3">
-                <label for="{{ form.categoria.id_for_label }}" class="form-label">
-                    <i class="fas fa-tags me-2"></i>{{ form.categoria.label }}
-                </label>
-                {{ form.categoria }}
-                {% if form.categoria.errors %}
-                    <div class="invalid-feedback d-block">
-                        {{ form.categoria.errors }}
-                    </div>
-                {% endif %}
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="descripcion" class="form-label">Descripción</label>
+                <input type="text" name="descripcion" id="descripcion" class="form-control" placeholder="Descripción del movimiento" required>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="categoria" class="form-label">Categoría</label>
+                <select name="categoria" id="categoria" class="form-select">
+                    <option value="General">General</option>
+                    <option value="Alimentos">Alimentos</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Entretenimiento">Entretenimiento</option>
+                    <!-- Agrega más categorías según sea necesario -->
+                </select>
             </div>
         </div>
     </div>
 
-    <!-- Descripción y Monto -->
+    <!-- Opciones de transacción recurrente -->
     <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm p-3">
-                <label for="{{ form.descripcion.id_for_label }}" class="form-label">
-                    <i class="fas fa-pencil-alt me-2"></i>{{ form.descripcion.label }}
+        <div class="col-md-12">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="esRecurrente" name="es_recurrente">
+                <label class="form-check-label" for="esRecurrente">
+                    ¿Es una transacción recurrente?
                 </label>
-                {{ form.descripcion }}
-                {% if form.descripcion.errors %}
-                    <div class="invalid-feedback d-block">
-                        {{ form.descripcion.errors }}
-                    </div>
-                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div id="recurrenteOptions" class="row mb-4 d-none">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="periodicidad" class="form-label">Periodicidad</label>
+                <select name="periodicidad" id="periodicidad" class="form-select">
+                    <option value="DIARIA">Diaria</option>
+                    <option value="SEMANAL">Semanal</option>
+                    <option value="MENSUAL">Mensual</option>
+                    <option value="ANUAL">Anual</option>
+                </select>
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm p-3">
-                <label for="{{ form.monto.id_for_label }}" class="form-label">
-                    <i class="fas fa-dollar-sign me-2"></i>{{ form.monto.label }}
-                </label>
-                {{ form.monto }}
-                {% if form.monto.errors %}
-                    <div class="invalid-feedback d-block">
-                        {{ form.monto.errors }}
-                    </div>
-                {% endif %}
+            <div class="form-group">
+                <label for="fechaFin" class="form-label">Fecha de Fin (opcional)</label>
+                <input type="date" name="fecha_fin" id="fechaFin" class="form-control">
             </div>
         </div>
     </div>
 
-    <!-- Recurrente -->
-    <div class="card border-0 shadow-sm p-3 mb-4">
-        <div class="form-check">
-            {{ form.es_recurrente }}
-            <label class="form-check-label" for="{{ form.es_recurrente.id_for_label }}">
-                <i class="fas fa-sync-alt me-2"></i>{{ form.es_recurrente.label }}
-            </label>
-        </div>
-    </div>
-
-    <!-- Campos recurrentes -->
-    <div id="campos-recurrentes" style="display: none;">
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm p-3">
-                    <label for="{{ form.periodicidad.id_for_label }}" class="form-label">
-                        <i class="fas fa-calendar-alt me-2"></i>{{ form.periodicidad.label }}
-                    </label>
-                    {{ form.periodicidad }}
-                    {% if form.periodicidad.errors %}
-                        <div class="invalid-feedback d-block">
-                            {{ form.periodicidad.errors }}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm p-3">
-                    <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">
-                        <i class="fas fa-calendar-day me-2"></i>{{ form.fecha_inicio.label }}
-                    </label>
-                    {{ form.fecha_inicio }}
-                    {% if form.fecha_inicio.errors %}
-                        <div class="invalid-feedback d-block">
-                            {{ form.fecha_inicio.errors }}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm p-3">
-                    <label for="{{ form.fecha_fin.id_for_label }}" class="form-label">
-                        <i class="fas fa-calendar-check me-2"></i>{{ form.fecha_fin.label }}
-                    </label>
-                    {{ form.fecha_fin }}
-                    {% if form.fecha_fin.errors %}
-                        <div class="invalid-feedback d-block">
-                            {{ form.fecha_fin.errors }}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Errores generales -->
-    {% if form.non_field_errors %}
-        <div class="alert alert-danger">
-            {{ form.non_field_errors }}
-        </div>
-    {% endif %}
-
-    <!-- Botones -->
-    <div class="mt-4 text-center">
-        <button type="submit" class="btn btn-primary btn-lg">
-            <i class="fas fa-save me-2"></i>Guardar
+    <!-- Botones de acción -->
+    <div class="text-center">
+        <button type="submit" name="tipo" value="INGRESO" class="btn btn-success btn-lg me-2">
+            <i class="fas fa-plus me-1"></i> Ingreso
+        </button>
+        <button type="submit" name="tipo" value="GASTO" class="btn btn-danger btn-lg">
+            <i class="fas fa-minus me-1"></i> Gasto
         </button>
         <a href="{% url 'lista_transacciones' %}" class="btn btn-secondary btn-lg">
             <i class="fas fa-times me-2"></i>Cancelar
@@ -145,19 +85,64 @@
     </div>
 </form>
 
+<!-- Últimas transacciones -->
+<div class="mt-5">
+    <h3 class="mb-4">Últimas 5 Transacciones</h3>
+    {% if ultimas_transacciones %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th>Tipo</th>
+                    <th>Monto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaccion in ultimas_transacciones %}
+                <tr>
+                    <td>{{ transaccion.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ transaccion.descripcion }}</td>
+                    <td>{{ transaccion.categoria|default:"Sin categoría" }}</td>
+                    <td>
+                        {% if transaccion.tipo == "INGRESO" %}
+                            <span class="badge bg-success">Ingreso</span>
+                        {% else %}
+                            <span class="badge bg-danger">Gasto</span>
+                        {% endif %}
+                    </td>
+                    <td class="{% if transaccion.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
+                        {{ transaccion.monto|formato_clp }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No hay transacciones registradas aún.</p>
+    {% endif %}
+</div>
+
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const esRecurrenteCheckbox = document.getElementById('{{ form.es_recurrente.id_for_label }}');
-    const camposRecurrentes = document.getElementById('campos-recurrentes');
-    
-    function toggleCamposRecurrentes() {
-        camposRecurrentes.style.display = esRecurrenteCheckbox.checked ? 'block' : 'none';
-    }
-    
-    esRecurrenteCheckbox.addEventListener('change', toggleCamposRecurrentes);
-    toggleCamposRecurrentes(); // Ejecutar al cargar la página
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        const esRecurrenteCheckbox = document.getElementById('esRecurrente');
+        const recurrenteOptions = document.getElementById('recurrenteOptions');
+
+        // Mostrar u ocultar las opciones de transacción recurrente
+        esRecurrenteCheckbox.addEventListener('change', function () {
+            if (esRecurrenteCheckbox.checked) {
+                recurrenteOptions.classList.remove('d-none'); // Mostrar las opciones
+                recurrenteOptions.classList.add('d-block');  // Asegurarse de que se muestre
+            } else {
+                recurrenteOptions.classList.add('d-none');   // Ocultar las opciones
+                recurrenteOptions.classList.remove('d-block');
+            }
+        });
+    });
 </script>
 {% endblock %}
 {% endblock %}

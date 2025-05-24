@@ -171,38 +171,32 @@ def lista_transacciones(request):
 @login_required
 def nueva_transaccion(request):
     if request.method == 'POST':
+        tipo = request.POST.get('tipo')  # Capturar el tipo de transacción (INGRESO o GASTO)
         form = TransaccionForm(request.POST)
         if form.is_valid():
             transaccion = form.save(commit=False)
             transaccion.usuario = request.user
-            transaccion.tipo = transaccion.tipo.upper()
-            
-            if transaccion.es_recurrente:
-                # Crear la serie recurrente
-                serie = SerieRecurrente.objects.create(usuario=request.user)
-                transaccion.serie_recurrente = serie
-                transaccion.fecha = transaccion.fecha_inicio
-                
-                # Guardar la transacción base
-                transaccion.save()
-                
-                # Generar las transacciones programadas
-                serie.generar_transacciones_programadas(transaccion)
-                
-                messages.success(request, 'Transacción recurrente creada correctamente. Se han programado las repeticiones según la periodicidad seleccionada.')
-            else:
-                transaccion.fecha = timezone.now()
-                transaccion.save()
-                messages.success(request, 'Transacción creada correctamente.')
-            
-            return redirect('lista_transacciones')
+            transaccion.tipo = tipo  # Asignar el tipo de transacción
+
+            # Si es recurrente, asignar la fecha de inicio como la actual
+            if transaccion.es_recurrente and not transaccion.fecha_inicio:
+                transaccion.fecha_inicio = timezone.now()
+
+            transaccion.save()
+            messages.success(request, f'Transacción de tipo {tipo} registrada correctamente.')
+            return redirect('nueva_transaccion')
         else:
-            messages.error(request, 'Por favor, corrige los errores en el formulario.')
+            # Mostrar errores del formulario
+            messages.error(request, 'Por favor, corrige los errores en el formulario.' + str(form.errors))
     else:
         form = TransaccionForm()
 
+    # Obtener las últimas 5 transacciones del usuario
+    ultimas_transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha')[:5]
+
     return render(request, 'finanzas/nueva_transaccion.html', {
-        'form': form
+        'form': form,
+        'ultimas_transacciones': ultimas_transacciones
     })
 
 

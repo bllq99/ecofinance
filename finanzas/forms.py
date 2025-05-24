@@ -28,7 +28,7 @@ class TransaccionForm(forms.ModelForm):
 
     class Meta:
         model = Transaccion
-        fields = ['tipo', 'categoria', 'descripcion', 'monto', 'es_recurrente', 'periodicidad', 'fecha_inicio', 'fecha_fin']
+        fields = ['monto', 'descripcion', 'categoria', 'es_recurrente', 'periodicidad', 'fecha_fin']
         widgets = {
             'tipo': forms.Select(
                 choices=[('INGRESO', 'Ingreso'), ('GASTO', 'Gasto')],
@@ -55,8 +55,6 @@ class TransaccionForm(forms.ModelForm):
         if es_recurrente:
             if not periodicidad:
                 raise forms.ValidationError('Debes seleccionar una periodicidad para transacciones recurrentes')
-            if not fecha_inicio:
-                raise forms.ValidationError('Debes especificar una fecha de inicio para transacciones recurrentes')
             if fecha_fin and fecha_fin < fecha_inicio:
                 raise forms.ValidationError('La fecha de fin debe ser posterior a la fecha de inicio')
 
