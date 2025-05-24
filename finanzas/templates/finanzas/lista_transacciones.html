@@ -93,4 +93,14 @@
         No hay transacciones registradas.
     </div>
 {% endif %}
+
+<!-- Botones flotantes para descargar -->
+<div class="position-fixed bottom-0 end-0 m-4 d-flex flex-column">
+    <a href="{% url 'descargar_transacciones' %}" class="btn btn-success btn-lg rounded-circle shadow mb-2" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+        <i class="fas fa-file-excel"></i>
+    </a>
+    <a href="{% url 'descargar_transacciones_pdf' %}" class="btn btn-danger btn-lg rounded-circle shadow" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+        <i class="fas fa-file-pdf"></i>
+    </a>
+</div>
 {% endblock %}
