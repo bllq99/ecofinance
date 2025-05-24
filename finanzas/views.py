@@ -12,7 +12,7 @@ from django.utils.timezone import localtime
 from django.contrib.auth.decorators import login_required
 from django.utils.formats import number_format
 import json
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django.http import JsonResponse
 
 
@@ -394,3 +394,58 @@ def establecer_balance_inicial(request):
             return redirect('dashboard')
     else:
         return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def añadir_dinero_objetivo(request, objetivo_id):
+    objetivo = get_object_or_404(ObjetivoAhorro, id=objetivo_id, usuario=request.user)
+    
+    if request.method == 'POST':
+        monto = request.POST.get('monto')
+        try:
+            monto = Decimal(monto)
+            if monto <= 0:
+                messages.error(request, 'El monto debe ser mayor que 0')
+                return redirect('lista_objetivos')
+            
+            objetivo.monto_actual += monto
+            objetivo.save()
+            messages.success(request, f'Se han añadido ${int(monto):,}'.replace(',', '.') + f' al objetivo "{objetivo.nombre}"')
+        except (ValueError, InvalidOperation):
+            messages.error(request, 'El monto ingresado no es válido')
+    
+    return redirect('lista_objetivos')
+
+@login_required
+def eliminar_dinero_objetivo(request, objetivo_id):
+    objetivo = get_object_or_404(ObjetivoAhorro, id=objetivo_id, usuario=request.user)
+    
+    if request.method == 'POST':
+        monto = request.POST.get('monto')
+        try:
+            monto = Decimal(monto)
+            if monto <= 0:
+                messages.error(request, 'El monto debe ser mayor que 0')
+                return redirect('lista_objetivos')
+            
+            if monto > objetivo.monto_actual:
+                messages.error(request, 'No puedes retirar más dinero del que tienes en el objetivo')
+                return redirect('lista_objetivos')
+            
+            objetivo.monto_actual -= monto
+            objetivo.save()
+            messages.success(request, f'Se han retirado ${int(monto):,}'.replace(',', '.') + f' del objetivo "{objetivo.nombre}"')
+        except (ValueError, InvalidOperation):
+            messages.error(request, 'El monto ingresado no es válido')
+    
+    return redirect('lista_objetivos')
+
+@login_required
+def eliminar_objetivo(request, objetivo_id):
+    objetivo = get_object_or_404(ObjetivoAhorro, id=objetivo_id, usuario=request.user)
+    if request.method == 'POST':
+        nombre = objetivo.nombre
+        objetivo.delete()
+        messages.success(request, f'El objetivo "{nombre}" ha sido eliminado correctamente.')
+        return redirect('lista_objetivos')
+    return redirect('lista_objetivos')

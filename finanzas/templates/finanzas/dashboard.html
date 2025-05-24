@@ -182,8 +182,8 @@
                 {{ objetivo.nombre }}
             </div>
             <div class="card-body">
-                <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo|floatformat:0|intcomma }}</strong></p>
-                <p>Monto actual: <strong>${{ objetivo.monto_actual|floatformat:0|intcomma }}</strong></p>
+                <p>Monto objetivo: <strong class="text-dark">{{ objetivo.monto_objetivo|formato_clp }}</strong></p>
+                <p>Monto actual: <strong class="text-dark">{{ objetivo.monto_actual|formato_clp }}</strong></p>
                 <div class="progress progress-inline">
                     {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
                     <div class="progress-bar progress-bar-inline progress-bar-secondary" role="progressbar"

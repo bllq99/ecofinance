@@ -1,5 +1,6 @@
 {% extends 'finanzas/base.html' %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block title %}Objetivos de Ahorro{% endblock %}
 
@@ -95,8 +96,9 @@
                 {% endif %}
             </div>
             <div class="card-body">
-                <p>Monto objetivo: <strong>${{ objetivo.monto_objetivo|floatformat:0|intcomma }}</strong></p>
-                <p>Monto actual: <strong>${{ objetivo.monto_actual|floatformat:0|intcomma }}</strong></p>
+                <p>Monto objetivo: <strong class="text-dark">{{ objetivo.monto_objetivo|formato_clp }}</strong></p>
+                <p>Monto actual: <strong class="text-dark">{{ objetivo.monto_actual|formato_clp }}</strong></p>
+                <small class="text-muted">Monto disponible: {{ objetivo.monto_actual|formato_clp }}</small>
                 <div class="progress">
                     <div class="progress-bar {% if objetivo.fecha_limite and objetivo.fecha_limite < fecha_actual %}bg-danger{% endif %} progress-bar-inline" role="progressbar"
                          style="width: {{ objetivo.progreso }}%;"
@@ -112,10 +114,70 @@
                 </p>
                 {% endif %}
                 <div class="mt-3 text-end">
-                    <a href="{% url 'editar_objetivo' objetivo.id %}" class="btn btn-outline-primary btn-sm">
+                    <button type="button" class="btn btn-success btn-sm me-2" data-bs-toggle="modal" data-bs-target="#añadirModal{{ objetivo.id }}">
+                        <i class="fas fa-plus me-1"></i>Ingreso
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm me-2" data-bs-toggle="modal" data-bs-target="#eliminarObjetivoModal{{ objetivo.id }}">
+                        <i class="fas fa-trash me-1"></i>Eliminar
+                    </button>
+                    <a href="{% url 'editar_objetivo' objetivo.id %}" class="btn btn-secondary btn-sm">
                         <i class="fas fa-edit me-1"></i>Editar
                     </a>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Añadir Dinero -->
+    <div class="modal fade" id="añadirModal{{ objetivo.id }}" tabindex="-1" aria-labelledby="añadirModalLabel{{ objetivo.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="añadirModalLabel{{ objetivo.id }}">Añadir dinero a {{ objetivo.nombre }}</h5>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                </div>
+                <form method="post" action="{% url 'añadir_dinero_objetivo' objetivo.id %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="monto{{ objetivo.id }}" class="form-label">Monto a añadir</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="monto{{ objetivo.id }}" name="monto" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i>Cancelar</button>
+                        <button type="submit" class="btn btn-success"><i class="fas fa-plus me-1"></i>Ingreso</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Eliminación de Objetivo -->
+    <div class="modal fade" id="eliminarObjetivoModal{{ objetivo.id }}" tabindex="-1" aria-labelledby="eliminarObjetivoModalLabel{{ objetivo.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="eliminarObjetivoModalLabel{{ objetivo.id }}">Eliminar objetivo</h5>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                </div>
+                <form method="post" action="{% url 'eliminar_objetivo' objetivo.id %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <p>¿Estás seguro que deseas eliminar el objetivo <strong>{{ objetivo.nombre }}</strong>? Esta acción no se puede deshacer.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i>Cancelar</button>
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i>Eliminar objetivo</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -124,4 +186,16 @@
 {% else %}
     <p>No hay objetivos de ahorro registrados.</p>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar todos los modales
+    var modals = document.querySelectorAll('.modal');
+    modals.forEach(function(modal) {
+        new bootstrap.Modal(modal);
+    });
+});
+</script>
 {% endblock %}
