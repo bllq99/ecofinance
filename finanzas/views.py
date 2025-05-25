@@ -403,7 +403,8 @@ def registro_view(request):
                 'error': 'Las contraseñas no coinciden'
             })
 
-        if User.objects.filter(username=email).exists():
+        # Verificar si el email ya está registrado
+        if User.objects.filter(email=email).exists():
             return render(request, 'finanzas/registro.html', {
                 'error': 'El correo electrónico ya está registrado'
             })
