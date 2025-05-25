@@ -52,7 +52,7 @@
               <li><a class="dropdown-item" ><i class="fas fa-user me-2"></i> Perfil</a></li>
               <li><a class="dropdown-item" ><i class="fas fa-cog me-2"></i> Configuración</a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión</a></li>
+              <li><a href="{% url 'logout' %}" class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión</a></li>
             </ul>
           </div>
         {% else %}
