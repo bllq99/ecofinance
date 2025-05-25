@@ -172,7 +172,7 @@
                                 {{ transaccion.tipo }}
                             </span>
                             <span class="fw-bold {% if transaccion.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
-                                {{ transaccion.monto|intcomma }}
+                                {{ transaccion.monto|formato_clp }}
                             </span>
                         </p>
                         <small class="text-muted">{{ transaccion.categoria|default:"Sin categoría" }}</small>

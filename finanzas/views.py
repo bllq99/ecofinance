@@ -23,6 +23,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from io import BytesIO
 from django.db.models.functions import TruncDay, TruncMonth
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
@@ -113,7 +114,7 @@ def dashboard(request):
     presupuesto_monto = float(presupuesto.monto) if presupuesto else 0
 
     # Obtener las últimas 4 transacciones
-    ultimas_transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha')[:4]
+    ultimas_transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha', '-id')[:4]
 
     # Obtener el mes y año actual
     mes_actual = fecha_actual.month
@@ -147,6 +148,12 @@ def dashboard(request):
         .order_by('mes')
     )
 
+    # Diccionario para traducir meses al español
+    meses_espanol = {
+        'Jan': 'Ene', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Abr', 'May': 'Mayo', 'Jun': 'Jun',
+        'Jul': 'Jul', 'Aug': 'Ago', 'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dic'
+    }
+
     meses_gastos = []
     gastos_por_mes = []
     max_gasto = 0
@@ -154,12 +161,15 @@ def dashboard(request):
 
     for gasto in gastos_mes:
         mes_str = gasto['mes'].strftime('%b %Y')
-        meses_gastos.append(mes_str)
+        # Traducir el mes al español
+        mes_abbr, anio = mes_str.split()
+        mes_es = meses_espanol.get(mes_abbr, mes_abbr)
+        meses_gastos.append(f"{mes_es} {anio}")
         monto = float(gasto['total'])
         gastos_por_mes.append(monto)
         if monto > max_gasto:
             max_gasto = monto
-            mes_max_gasto = mes_str
+            mes_max_gasto = f"{mes_es} {anio}"
 
     # Tomar solo los últimos 3 meses
     meses_gastos = meses_gastos[-3:]
@@ -198,50 +208,58 @@ def dashboard(request):
 # 📄 Lista de transacciones
 @login_required
 def lista_transacciones(request):
-    # Verificar si debemos mostrar transacciones futuras
     mostrar_futuras = 'mostrar_futuras' in request.GET
-    
-    # Obtener fecha actual
     fecha_actual = timezone.now().date()
-    
-    # Filtrar transacciones según la preferencia
-    if mostrar_futuras:
-        transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha')
+    orden = request.GET.get('orden')
+
+    # Orden por defecto: fecha descendente y luego id descendente
+    if not orden:
+        orden = '-fecha'
+    if orden == '-fecha':
+        ordenes = ['-fecha', '-id']
+    elif orden == 'fecha':
+        ordenes = ['fecha', 'id']
+    elif orden == '-monto':
+        ordenes = ['-monto', '-fecha', '-id']
+    elif orden == 'monto':
+        ordenes = ['monto', 'fecha', 'id']
+    elif orden == 'descripcion':
+        ordenes = ['descripcion', 'fecha', 'id']
+    elif orden == '-descripcion':
+        ordenes = ['-descripcion', '-fecha', '-id']
     else:
-        transacciones = Transaccion.objects.filter(usuario=request.user, fecha__lte=fecha_actual).order_by('-fecha')
-    
-    # Crear un diccionario para agrupar transacciones por mes
-    transacciones_por_mes = {}
-    
-    for transaccion in transacciones:
-        # Crear clave de año-mes (por ejemplo: "2025-05")
-        mes_clave = transaccion.fecha.strftime('%Y-%m')
-        
-        # Crear entrada para el mes si no existe
-        if mes_clave not in transacciones_por_mes:
-            # Formatear el nombre del mes para mostrar (por ejemplo: "Mayo 2025")
-            nombre_mes = transaccion.fecha.strftime('%B %Y').capitalize()
-            transacciones_por_mes[mes_clave] = {
-                'nombre': nombre_mes,
-                'transacciones': [],
-                'total_ingresos': 0,
-                'total_gastos': 0
-            }
-        
-        # Agregar la transacción al mes correspondiente
-        transacciones_por_mes[mes_clave]['transacciones'].append(transaccion)
-        
-        # Actualizar totales
-        if transaccion.tipo == 'INGRESO':
-            transacciones_por_mes[mes_clave]['total_ingresos'] += float(transaccion.monto)
-        else:
-            transacciones_por_mes[mes_clave]['total_gastos'] += float(transaccion.monto)
-    
-    # Convertir el diccionario a una lista ordenada por mes (más reciente primero)
-    meses = sorted(transacciones_por_mes.items(), key=lambda x: x[0], reverse=True)
-    
+        ordenes = [orden, '-fecha', '-id']
+
+    if mostrar_futuras:
+        transacciones = Transaccion.objects.filter(usuario=request.user).order_by(*ordenes)
+    else:
+        transacciones = Transaccion.objects.filter(usuario=request.user, fecha__lte=fecha_actual).order_by(*ordenes)
+
+    # Diccionario para traducir meses al español
+    meses_espanol = {
+        'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
+        'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
+        'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+    }
+
+    nombre_mes = None
+    if transacciones.exists():
+        mes_actual = transacciones.first().fecha.strftime('%B %Y')
+        nombre_mes = meses_espanol[mes_actual.split()[0]] + ' ' + mes_actual.split()[1]
+
+    page = request.GET.get('page', 1)
+    paginator = Paginator(transacciones, 10)
+    try:
+        transacciones_paginadas = paginator.page(page)
+    except PageNotAnInteger:
+        transacciones_paginadas = paginator.page(1)
+    except EmptyPage:
+        transacciones_paginadas = paginator.page(paginator.num_pages)
+
     return render(request, 'finanzas/lista_transacciones.html', {
-        'meses': meses,
+        'transacciones': transacciones_paginadas,
+        'nombre_mes': nombre_mes,
+        'orden_actual': orden,
     })
 
 
@@ -270,7 +288,7 @@ def nueva_transaccion(request):
         form = TransaccionForm()
 
     # Obtener las últimas 5 transacciones del usuario
-    ultimas_transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha')[:5]
+    ultimas_transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha', '-id')[:5]
 
     return render(request, 'finanzas/nueva_transaccion.html', {
         'form': form,
