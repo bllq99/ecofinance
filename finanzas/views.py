@@ -689,3 +689,7 @@ def perfil_usuario(request):
     return render(request, 'finanzas/perfil.html', {
         'user': request.user
     })
+
+@login_required
+def configuracion(request):
+    return render(request, 'finanzas/configuracion.html')

@@ -1,0 +1,484 @@
+{% extends 'finanzas/base.html' %}
+
+{% block title %}Configuración - EcoFinance{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-cog text-primary me-2"></i>
+                Configuración
+            </h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Menú lateral de configuración -->
+        <div class="col-md-3 mb-4">
+            <div class="list-group">
+                <a href="#perfil" class="list-group-item list-group-item-action active" data-bs-toggle="list">
+                    <i class="fas fa-user me-2"></i> Perfil
+                </a>
+                <a href="#notificaciones" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="fas fa-bell me-2"></i> Notificaciones
+                </a>
+                <a href="#privacidad" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="fas fa-shield-alt me-2"></i> Privacidad
+                </a>
+                <a href="#apariencia" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="fas fa-paint-brush me-2"></i> Apariencia
+                </a>
+                <a href="#idioma" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="fas fa-globe me-2"></i> Idioma y Región
+                </a>
+            </div>
+        </div>
+
+        <!-- Contenido de las secciones -->
+        <div class="col-md-9">
+            <div class="tab-content">
+                <!-- Sección Perfil -->
+                <div class="tab-pane fade show active" id="perfil">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">Información del Perfil</h4>
+                            <div class="text-center mb-4">
+                                <div class="avatar-circle mb-3">
+                                    <i class="fas fa-user fa-3x text-white"></i>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-camera me-2"></i>Cambiar foto
+                                </button>
+                            </div>
+                            <form>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Nombre</label>
+                                        <input type="text" class="form-control" value="{{ user.first_name }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Apellido</label>
+                                        <input type="text" class="form-control" value="{{ user.last_name }}">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Correo electrónico</label>
+                                        <input type="email" class="form-control" value="{{ user.email }}">
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección Notificaciones -->
+                <div class="tab-pane fade" id="notificaciones">
+
+                     <!-- Alertas de Notificaciones -->
+                     <div id="alertNotifEmailDanger" class="alert alert-danger mt-2" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Has desactivado las notificaciones por correo electrónico.
+                     </div>
+                     <div id="alertNotifEmailSuccess" class="alert alert-success mt-2" style="display: none;">
+                        <i class="fas fa-check-circle me-1"></i>
+                        Has activado las notificaciones por correo electrónico.
+                     </div>
+
+                     <div id="alertNotifRecordatoriosDanger" class="alert alert-danger mt-2" style="display: none;">
+                         <i class="fas fa-exclamation-triangle me-1"></i>
+                         Has desactivado los recordatorios de pagos.
+                     </div>
+                     <div id="alertNotifRecordatoriosSuccess" class="alert alert-success mt-2" style="display: none;">
+                         <i class="fas fa-check-circle me-1"></i>
+                         Has activado los recordatorios de pagos.
+                     </div>
+
+                     <div id="alertNotifObjetivosDanger" class="alert alert-danger mt-2" style="display: none;">
+                         <i class="fas fa-exclamation-triangle me-1"></i>
+                         Has desactivado las actualizaciones de objetivos.
+                     </div>
+                     <div id="alertNotifObjetivosSuccess" class="alert alert-success mt-2" style="display: none;">
+                         <i class="fas fa-check-circle me-1"></i>
+                         Has activado las actualizaciones de objetivos.
+                     </div>
+
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">Preferencias de Notificaciones</h4>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="notifEmail" checked>
+                                <label class="form-check-label" for="notifEmail">Notificaciones por correo electrónico</label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="notifRecordatorios" checked>
+                                <label class="form-check-label" for="notifRecordatorios">Recordatorios de pagos</label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="notifObjetivos">
+                                <label class="form-check-label" for="notifObjetivos">Actualizaciones de objetivos</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección Privacidad -->
+                <div class="tab-pane fade" id="privacidad">
+
+                    <!-- Alertas de Privacidad -->
+                    <div id="alertPrivacidadDatosDanger" class="alert alert-danger mt-2" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Has desactivado la opción de compartir datos anónimos.
+                    </div>
+                    <div id="alertPrivacidadDatosSuccess" class="alert alert-success mt-2" style="display: none;">
+                        <i class="fas fa-check-circle me-1"></i>
+                        Has activado la opción de compartir datos anónimos.
+                    </div>
+                    <div id="alertPrivacidadPerfilDanger" class="alert alert-danger mt-2" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Tu perfil ya no será público.
+                    </div>
+                    <div id="alertPrivacidadPerfilSuccess" class="alert alert-success mt-2" style="display: none;">
+                        <i class="fas fa-check-circle me-1"></i>
+                        Tu perfil ahora es público.
+                    </div>
+
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">Configuración de Privacidad</h4>
+                            
+                            <!-- Compartir datos anónimos -->
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="privacidadDatos" checked>
+                                    <label class="form-check-label" for="privacidadDatos">Compartir datos anónimos para mejorar el servicio</label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Por defecto: Activado.
+                                </small>
+                            </div>
+
+                            <!-- Perfil público -->
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="privacidadPerfil">
+                                    <label class="form-check-label" for="privacidadPerfil">Perfil público</label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Por defecto: Desactivado.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección Apariencia -->
+                <div class="tab-pane fade" id="apariencia">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">Personalización de Apariencia</h4>
+                            <div class="mb-4">
+                                <label class="form-label">Tema</label>
+                                <select class="form-select">
+                                    <option value="light">Claro</option>
+                                    <option value="dark">Oscuro</option>
+                                    <option value="system">Sistema</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">Color principal</label>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-primary rounded-circle" style="width: 40px; height: 40px;"></button>
+                                    <button class="btn btn-success rounded-circle" style="width: 40px; height: 40px;"></button>
+                                    <button class="btn btn-info rounded-circle" style="width: 40px; height: 40px;"></button>
+                                    <button class="btn btn-warning rounded-circle" style="width: 40px; height: 40px;"></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección Idioma y Región -->
+                <div class="tab-pane fade" id="idioma">
+
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">Idioma y Región</h4>
+                            
+                            <!-- Selector de Idioma -->
+                            <div class="mb-4">
+                                <label class="form-label">Idioma</label>
+                                <div class="form-control bg-light">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-language me-2 text-primary"></i>
+                                        <span>Español</span>
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Idioma predeterminado del sistema
+                                </small>
+                            </div>
+
+                            <!-- Selector de Región -->
+                            <div class="mb-4">
+                                <label class="form-label">Región</label>
+                                <div class="form-control bg-light">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                                        <span>Chile</span>
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Región predeterminada del sistema
+                                  </small>
+                            </div>
+
+                            <!-- Formato de Moneda -->
+                            <div class="mb-4">
+                                <label class="form-label">Formato de Moneda</label>
+                                <div class="form-control bg-light">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-dollar-sign me-2 text-primary"></i>
+                                        <span>CLP - Peso Chileno</span>
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Moneda predeterminada del sistema
+                                </small>
+                            </div>
+
+                            <!-- Formato de Fecha -->
+                            <div class="mb-4">
+                                <label class="form-label">Formato de Fecha</label>
+                                <div class="form-control bg-light">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                                        <span>DD/MM/YYYY</span>
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Formato predeterminado del sistema
+                                </small>
+                            </div>
+
+                            <!-- Formato de Hora -->
+                            <div class="mb-4">
+                                <label class="form-label">Formato de Hora</label>
+                                <div class="form-control bg-light">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-clock me-2 text-primary"></i>
+                                        <span>24 horas</span>
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Formato predeterminado del sistema
+                                </small>
+                            </div>
+
+                            <!-- Mensaje de actualización -->
+                            <div class="alert alert-primary mt-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-rocket me-3 fa-2x"></i>
+                                    <div>
+                                        <h5 class="alert-heading mb-1">¡Próximas actualizaciones!</h5>
+                                        <p class="mb-0">En futuras versiones se habilitará la personalización de idioma, región y formato de moneda. ¡Mantente atento a las novedades!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación Personalizado -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmModalLabel">Confirmar Acción</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="modalMessage">
+        <!-- El mensaje se insertará aquí por JavaScript -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="confirmActionButton">Sí, continuar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 100px;
+    height: 100px;
+    background-color: #0d6efd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.list-group-item {
+    border: none;
+    border-radius: 5px !important;
+    margin-bottom: 5px;
+}
+
+.list-group-item.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-check-input:not(:checked) {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.form-check-input:not(:checked):focus {
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+.form-select {
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+
+.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+</style>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Privacy switches and alerts
+        const privacidadDatosSwitch = document.getElementById('privacidadDatos');
+        const privacidadPerfilSwitch = document.getElementById('privacidadPerfil');
+        const alertPrivacidadDatosDanger = document.getElementById('alertPrivacidadDatosDanger');
+        const alertPrivacidadDatosSuccess = document.getElementById('alertPrivacidadDatosSuccess');
+        const alertPrivacidadPerfilDanger = document.getElementById('alertPrivacidadPerfilDanger');
+        const alertPrivacidadPerfilSuccess = document.getElementById('alertPrivacidadPerfilSuccess');
+
+        // Notification switches and alerts
+        const notifEmailSwitch = document.getElementById('notifEmail');
+        const alertNotifEmailDanger = document.getElementById('alertNotifEmailDanger');
+        const alertNotifEmailSuccess = document.getElementById('alertNotifEmailSuccess');
+
+        const notifRecordatoriosSwitch = document.getElementById('notifRecordatorios');
+        const alertNotifRecordatoriosDanger = document.getElementById('alertNotifRecordatoriosDanger');
+        const alertNotifRecordatoriosSuccess = document.getElementById('alertNotifRecordatoriosSuccess');
+
+        const notifObjetivosSwitch = document.getElementById('notifObjetivos');
+        const alertNotifObjetivosDanger = document.getElementById('alertNotifObjetivosDanger');
+        const alertNotifObjetivosSuccess = document.getElementById('alertNotifObjetivosSuccess');
+
+        // Function to show alert for a specific time
+        function showAlert(alertElement) {
+            // Ensure all alerts are initially hidden before showing
+            // Privacy alerts
+            if (alertPrivacidadDatosDanger) alertPrivacidadDatosDanger.style.display = 'none';
+            if (alertPrivacidadDatosSuccess) alertPrivacidadDatosSuccess.style.display = 'none';
+            if (alertPrivacidadPerfilDanger) alertPrivacidadPerfilDanger.style.display = 'none';
+            if (alertPrivacidadPerfilSuccess) alertPrivacidadPerfilSuccess.style.display = 'none';
+            // Notification alerts
+            if (alertNotifEmailDanger) alertNotifEmailDanger.style.display = 'none';
+            if (alertNotifEmailSuccess) alertNotifEmailSuccess.style.display = 'none';
+            if (alertNotifRecordatoriosDanger) alertNotifRecordatoriosDanger.style.display = 'none';
+            if (alertNotifRecordatoriosSuccess) alertNotifRecordatoriosSuccess.style.display = 'none';
+            if (alertNotifObjetivosDanger) alertNotifObjetivosDanger.style.display = 'none';
+            if (alertNotifObjetivosSuccess) alertNotifObjetivosSuccess.style.display = 'none';
+
+            alertElement.style.display = 'block';
+            setTimeout(() => {
+                alertElement.style.display = 'none';
+            }, 5000); // 5000 milliseconds = 5 seconds
+        }
+
+        // Initial state: hide all alerts on page load
+        // Privacy alerts
+        if (alertPrivacidadDatosDanger) alertPrivacidadDatosDanger.style.display = 'none';
+        if (alertPrivacidadDatosSuccess) alertPrivacidadDatosSuccess.style.display = 'none';
+        if (alertPrivacidadPerfilDanger) alertPrivacidadPerfilDanger.style.display = 'none';
+        if (alertPrivacidadPerfilSuccess) alertPrivacidadPerfilSuccess.style.display = 'none';
+        // Notification alerts
+        if (alertNotifEmailDanger) alertNotifEmailDanger.style.display = 'none';
+        if (alertNotifEmailSuccess) alertNotifEmailSuccess.style.display = 'none';
+        if (alertNotifRecordatoriosDanger) alertNotifRecordatoriosDanger.style.display = 'none';
+        if (alertNotifRecordatoriosSuccess) alertNotifRecordatoriosSuccess.style.display = 'none';
+        if (alertNotifObjetivosDanger) alertNotifObjetivosDanger.style.display = 'none';
+        if (alertNotifObjetivosSuccess) alertNotifObjetivosSuccess.style.display = 'none';
+
+
+        // Add event listeners to Privacy switches
+        if (privacidadDatosSwitch && alertPrivacidadDatosDanger && alertPrivacidadDatosSuccess) {
+            privacidadDatosSwitch.addEventListener('change', function() {
+                if (this.checked) {
+                    showAlert(alertPrivacidadDatosSuccess);
+                } else {
+                    showAlert(alertPrivacidadDatosDanger);
+                }
+            });
+        }
+
+        if (privacidadPerfilSwitch && alertPrivacidadPerfilDanger && alertPrivacidadPerfilSuccess) {
+            privacidadPerfilSwitch.addEventListener('change', function() {
+                if (this.checked) {
+                    showAlert(alertPrivacidadPerfilSuccess);
+                } else {
+                    showAlert(alertPrivacidadPerfilDanger);
+                }
+            });
+        }
+
+        // Add event listeners to Notification switches
+        if (notifEmailSwitch && alertNotifEmailDanger && alertNotifEmailSuccess) {
+             notifEmailSwitch.addEventListener('change', function() {
+                if (this.checked) {
+                    showAlert(alertNotifEmailSuccess);
+                } else {
+                    showAlert(alertNotifEmailDanger);
+                }
+            });
+        }
+
+        if (notifRecordatoriosSwitch && alertNotifRecordatoriosDanger && alertNotifRecordatoriosSuccess) {
+             notifRecordatoriosSwitch.addEventListener('change', function() {
+                if (this.checked) {
+                    showAlert(alertNotifRecordatoriosSuccess);
+                } else {
+                    showAlert(alertNotifRecordatoriosDanger);
+                }
+            });
+        }
+
+         if (notifObjetivosSwitch && alertNotifObjetivosDanger && alertNotifObjetivosSuccess) {
+            notifObjetivosSwitch.addEventListener('change', function() {
+                if (this.checked) {
+                    showAlert(alertNotifObjetivosSuccess);
+                } else {
+                    showAlert(alertNotifObjetivosDanger);
+                }
+            });
+        }
+
+    });
+</script>
+{% endblock %}
+{% endblock %} 

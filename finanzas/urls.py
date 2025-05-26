@@ -20,4 +20,5 @@ urlpatterns = [
     path('perfil/', views.perfil_usuario, name='perfil_usuario'),
     path('presupuesto/', views.establecer_presupuesto, name='establecer_presupuesto'),
     path('establecer-balance-inicial/', views.establecer_balance_inicial, name='establecer_balance_inicial'),
+    path('configuracion/', views.configuracion, name='configuracion'),
 ]
