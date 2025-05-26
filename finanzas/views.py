@@ -382,7 +382,8 @@ def login_view(request):
         
         if user is not None:
             login(request, user)
-            messages.success(request, '¡Bienvenido! Has iniciado sesión correctamente.')
+            nombre = user.first_name if user.first_name else user.email
+            messages.success(request, f'¡Bienvenido {nombre}! Has iniciado sesión correctamente.')
             return redirect('dashboard')
         else:
             messages.error(request, 'Correo electrónico o contraseña incorrectos')
@@ -651,3 +652,40 @@ def descargar_transacciones_pdf(request):
     response.write(pdf)
     
     return response
+
+@login_required
+def perfil_usuario(request):
+    if request.method == 'POST':
+        # Obtener los datos del formulario
+        nombre = request.POST.get('nombre')
+        email = request.POST.get('email')
+        password_actual = request.POST.get('password_actual')
+        password_nueva = request.POST.get('password_nueva')
+        password_confirmar = request.POST.get('password_confirmar')
+
+        # Actualizar nombre
+        request.user.first_name = nombre
+        request.user.save()
+
+        # Si se proporcionó una nueva contraseña
+        if password_nueva:
+            if not request.user.check_password(password_actual):
+                messages.error(request, 'La contraseña actual es incorrecta')
+                return redirect('perfil_usuario')
+            
+            if password_nueva != password_confirmar:
+                messages.error(request, 'Las nuevas contraseñas no coinciden')
+                return redirect('perfil_usuario')
+            
+            request.user.set_password(password_nueva)
+            request.user.save()
+            messages.success(request, 'Contraseña actualizada correctamente')
+            # Reautenticar al usuario después de cambiar la contraseña
+            login(request, request.user)
+        
+        messages.success(request, 'Perfil actualizado correctamente')
+        return redirect('perfil_usuario')
+
+    return render(request, 'finanzas/perfil.html', {
+        'user': request.user
+    })

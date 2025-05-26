@@ -17,6 +17,7 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('registro/', views.registro_view, name='registro'),
+    path('perfil/', views.perfil_usuario, name='perfil_usuario'),
     path('presupuesto/', views.establecer_presupuesto, name='establecer_presupuesto'),
     path('establecer-balance-inicial/', views.establecer_balance_inicial, name='establecer_balance_inicial'),
 ]
