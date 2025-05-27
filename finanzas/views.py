@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from datetime import datetime
 from django.utils import timezone
 from itertools import groupby
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime, now
 from django.contrib.auth.decorators import login_required
 from django.utils.formats import number_format
 import json
@@ -343,13 +343,13 @@ def nuevo_objetivo(request):
             objetivo.save()
             messages.success(request, f'¡Objetivo "{objetivo.nombre}" creado exitosamente!')
             return redirect('lista_objetivos')
-        else:
-            messages.error(request, 'Por favor, corrige los errores en el formulario.')
     else:
         form = ObjetivoForm(initial={'monto_actual': 0})
 
+    fecha_actual = now().date().isoformat()  # Formato YYYY-MM-DD
     return render(request, 'finanzas/nuevo_objetivo.html', {
-        'form': form
+        'form': form,
+        'fecha_actual': fecha_actual
     })
 
 
@@ -495,21 +495,37 @@ def establecer_balance_inicial(request):
 @login_required
 def añadir_dinero_objetivo(request, objetivo_id):
     objetivo = get_object_or_404(ObjetivoAhorro, id=objetivo_id, usuario=request.user)
-    
+
     if request.method == 'POST':
         monto = request.POST.get('monto')
         try:
             monto = Decimal(monto)
             if monto <= 0:
-                messages.error(request, 'El monto debe ser mayor que 0')
+                messages.error(request, 'El monto debe ser mayor que 0.')
                 return redirect('lista_objetivos')
-            
+
+            if objetivo.monto_actual + monto > objetivo.monto_objetivo:
+                messages.warning(request, 'No puedes añadir más dinero del que falta para alcanzar el objetivo.')
+                return redirect('lista_objetivos')
+
+            # Crear una transacción de tipo "GASTO"
+            Transaccion.objects.create(
+                usuario=request.user,
+                descripcion=f"Aporte al objetivo: {objetivo.nombre}",
+                monto=monto,
+                tipo="GASTO",
+                categoria="Ahorro",
+                fecha=timezone.now()
+            )
+
+            # Añadir el monto al objetivo
             objetivo.monto_actual += monto
             objetivo.save()
-            messages.success(request, f'Se han añadido ${int(monto):,}'.replace(',', '.') + f' al objetivo "{objetivo.nombre}"')
+
+            messages.success(request, f'Se han añadido ${monto} al objetivo "{objetivo.nombre}".')
         except (ValueError, InvalidOperation):
-            messages.error(request, 'El monto ingresado no es válido')
-    
+            messages.error(request, 'El monto ingresado no es válido.')
+
     return redirect('lista_objetivos')
 
 @login_required

@@ -1,5 +1,6 @@
 from django import forms
 from .models import Transaccion, ObjetivoAhorro, Presupuesto
+from django.utils.timezone import now
 
 class TransaccionForm(forms.ModelForm):
     es_recurrente = forms.BooleanField(
@@ -76,6 +77,10 @@ class ObjetivoForm(forms.ModelForm):
             'monto_actual': 'Monto actual',
             'fecha_limite': 'Fecha límite'
         }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Configurar el atributo 'min' para el campo fecha_limite
+        self.fields['fecha_limite'].widget.attrs['min'] = now().date().isoformat()
 
     def clean_monto_objetivo(self):
         monto = self.cleaned_data.get('monto_objetivo')
@@ -87,7 +92,17 @@ class ObjetivoForm(forms.ModelForm):
         monto = self.cleaned_data.get('monto_actual')
         if monto < 0:
             raise forms.ValidationError('El monto actual no puede ser negativo')
+        monto_actual = self.cleaned_data.get('monto_actual')
+        monto_objetivo = self.cleaned_data.get('monto_objetivo')
+        if monto_actual and monto_objetivo and monto_actual > monto_objetivo:
+            raise forms.ValidationError("El monto actual no puede exceder el monto objetivo.")
         return monto
+    
+    def clean_fecha_limite(self):
+        fecha_limite = self.cleaned_data.get('fecha_limite')
+        if fecha_limite and fecha_limite <= now().date():
+            raise forms.ValidationError("La fecha límite debe ser una fecha futura.")
+        return fecha_limite
 
 class PresupuestoForm(forms.ModelForm):
     class Meta:

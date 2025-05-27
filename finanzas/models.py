@@ -120,6 +120,13 @@ class ObjetivoAhorro(models.Model):
     monto_objetivo = models.DecimalField(max_digits=10, decimal_places=2)
     monto_actual = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     fecha_limite = models.DateField(null=True, blank=True)
+    completado = models.BooleanField(default=False) 
+
+    def save(self, *args, **kwargs):
+        # Marcar como completado si el monto actual alcanza o supera el monto objetivo
+        if self.monto_actual >= self.monto_objetivo:
+            self.completado = True
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre
