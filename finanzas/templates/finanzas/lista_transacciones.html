@@ -165,4 +165,71 @@
         <i class="fas fa-file-pdf"></i>
     </a>
 </div>
+
+<!-- Series recurrentes activas -->
+<div class="card mb-4">
+    <div class="card-header bg-white d-flex align-items-center justify-content-between flex-wrap">
+        <span class="fw-bold"><i class="fas fa-sync-alt me-2"></i>Transacciones Recurrentes Activas</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-blue">
+                    <tr>
+                        <th>Descripción</th>
+                        <th>Categoría</th>
+                        <th>Periodicidad</th>
+                        <th>Próxima Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in series_con_base %}
+                    <tr>
+                        <td class="text-break">{{ item.trans.descripcion }}</td>
+                        <td>{{ item.trans.categoria|default:"Sin categoría" }}</td>
+                        <td>
+                            <span class="badge bg-info text-dark">{{ item.trans.periodicidad|title }}</span>
+                        </td>
+                        <td>
+                            {% if item.proxima %}
+                                {{ item.proxima|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <!-- Botón de eliminar serie recurrente -->
+                            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteSerieModal{{ item.serie.id }}">
+                                <i class="fas fa-trash-alt"></i> Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- Modal de confirmación para eliminar serie -->
+                    <div class="modal fade" id="deleteSerieModal{{ item.serie.id }}" tabindex="-1" aria-labelledby="deleteSerieModalLabel{{ item.serie.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteSerieModalLabel{{ item.serie.id }}">Eliminar Recurrente</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    ¿Seguro que deseas eliminar esta serie recurrente? Se eliminarán todas las transacciones futuras no ocurridas.
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <form method="POST" action="{% url 'eliminar_recurrente' item.serie.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -41,7 +41,8 @@ class SerieRecurrente(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     activa = models.BooleanField(default=True)
-    
+    ultima_generada = models.DateField(null=True, blank=True)  # NUEVO
+
     def __str__(self):
         return f"Serie recurrente #{self.id}"
     

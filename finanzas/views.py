@@ -24,6 +24,7 @@ from reportlab.lib.units import inch
 from io import BytesIO
 from django.db.models.functions import TruncDay, TruncMonth
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from dateutil.relativedelta import relativedelta
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
@@ -183,6 +184,12 @@ def dashboard(request):
             max_gasto = monto
             mes_max_gasto = meses_gastos[i]
 
+    hoy = timezone.now().date()
+    ultimas_transacciones = Transaccion.objects.filter(
+        usuario=request.user,
+        fecha__lte=hoy  # Solo hasta hoy
+    ).order_by('-fecha', '-id')[:10]  # O la cantidad que desees
+
     return render(request, 'finanzas/dashboard.html', {
         'ingresos': float(ingresos),
         'gastos': float(gastos),
@@ -210,6 +217,13 @@ def dashboard(request):
 def lista_transacciones(request):
     mostrar_futuras = 'mostrar_futuras' in request.GET
     fecha_actual = timezone.now().date()
+    desde = fecha_actual.replace(day=1)
+    hasta = fecha_actual.replace(day=28) + relativedelta(days=4)
+    hasta = hasta - relativedelta(days=hasta.day-1)  # último día del mes
+
+    # Genera las transacciones recurrentes necesarias para el rango consultado
+    generar_transacciones_recurrentes(request.user, desde, hasta)
+
     orden = request.GET.get('orden')
 
     # Orden por defecto: fecha descendente y luego id descendente
@@ -256,10 +270,26 @@ def lista_transacciones(request):
     except EmptyPage:
         transacciones_paginadas = paginator.page(paginator.num_pages)
 
+    series_recurrentes = SerieRecurrente.objects.filter(usuario=request.user, activa=True)
+    today = timezone.now().date()
+
+    series_con_base = []
+    for serie in series_recurrentes:
+        trans_base = serie.transaccion_set.order_by('fecha').first()
+        # Buscar la próxima transacción futura
+        proxima = serie.transaccion_set.filter(fecha__gt=today).order_by('fecha').first()
+        series_con_base.append({
+            'serie': serie,
+            'trans': trans_base,
+            'proxima': proxima.fecha if proxima else None
+        })
+
     return render(request, 'finanzas/lista_transacciones.html', {
         'transacciones': transacciones_paginadas,
-        'nombre_mes': nombre_mes,
         'orden_actual': orden,
+        'nombre_mes': nombre_mes,
+        'series_con_base': series_con_base,
+        'today': today,
     })
 
 
@@ -666,3 +696,69 @@ def descargar_transacciones_pdf(request):
     response.write(pdf)
     
     return response
+
+def generar_transacciones_recurrentes(usuario, desde, hasta):
+    series = SerieRecurrente.objects.filter(
+        usuario=usuario,
+        activa=True,
+        transaccion__fecha_inicio__lte=hasta
+    ).distinct()
+
+    for serie in series:
+        trans_base = Transaccion.objects.filter(serie_recurrente=serie).order_by('fecha_inicio').first()
+        if not trans_base:
+            continue
+
+        fecha_inicio = trans_base.fecha_inicio
+        fecha_fin = trans_base.fecha_fin or hasta
+        periodicidad = trans_base.periodicidad.lower()
+        ultima = serie.ultima_generada or fecha_inicio
+
+        # Determina el incremento
+        incrementos = {
+            'diaria': relativedelta(days=1),
+            'semanal': relativedelta(weeks=1),
+            'mensual': relativedelta(months=1),
+            'anual': relativedelta(years=1),
+        }
+        incremento = incrementos.get(periodicidad)
+        if not incremento:
+            continue
+
+        fecha_actual = ultima
+        while fecha_actual <= hasta and fecha_actual <= fecha_fin:
+            # ¿Ya existe la transacción para esta fecha?
+            if not Transaccion.objects.filter(
+                serie_recurrente=serie, fecha=fecha_actual
+            ).exists():
+                Transaccion.objects.create(
+                    usuario=trans_base.usuario,
+                    descripcion=trans_base.descripcion,
+                    monto=trans_base.monto,
+                    tipo=trans_base.tipo,
+                    fecha=fecha_actual,
+                    categoria=trans_base.categoria,
+                    es_recurrente=True,
+                    periodicidad=trans_base.periodicidad,
+                    fecha_inicio=trans_base.fecha_inicio,
+                    fecha_fin=trans_base.fecha_fin,
+                    serie_recurrente=serie
+                )
+                serie.ultima_generada = fecha_actual
+                serie.save(update_fields=['ultima_generada'])
+            fecha_actual += incremento
+
+@login_required
+def listar_recurrentes(request):
+    series = SerieRecurrente.objects.filter(usuario=request.user, activa=True)
+    return render(request, 'finanzas/lista_recurrentes.html', {'series': series})
+
+@login_required
+def eliminar_recurrente(request, serie_id):
+    serie = get_object_or_404(SerieRecurrente, id=serie_id, usuario=request.user, activa=True)
+    hoy = timezone.now().date()
+    Transaccion.objects.filter(serie_recurrente=serie, fecha__gt=hoy).delete()
+    serie.activa = False
+    serie.save()
+    messages.success(request, "Transacción recurrente eliminada y futuras transacciones canceladas.")
+    return redirect('lista_transacciones')

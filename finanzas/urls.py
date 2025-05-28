@@ -19,4 +19,5 @@ urlpatterns = [
     path('registro/', views.registro_view, name='registro'),
     path('presupuesto/', views.establecer_presupuesto, name='establecer_presupuesto'),
     path('establecer-balance-inicial/', views.establecer_balance_inicial, name='establecer_balance_inicial'),
+    path('recurrentes/eliminar/<int:serie_id>/', views.eliminar_recurrente, name='eliminar_recurrente'),
 ]
