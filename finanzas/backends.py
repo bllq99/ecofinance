@@ -7,12 +7,15 @@ class EmailBackend(ModelBackend):
         UserModel = get_user_model()
         try:
             # Buscar usuario por email
-            user = UserModel.objects.get(email=username)
-            if user.check_password(password):
-                return user
+            users = UserModel.objects.filter(email=username)
+            if users.exists():
+                # Intentar autenticar con cada usuario encontrado
+                for user in users:
+                    if user.check_password(password):
+                        return user
+            return None
         except UserModel.DoesNotExist:
             return None
-        return None
 
     def get_user(self, user_id):
         UserModel = get_user_model()

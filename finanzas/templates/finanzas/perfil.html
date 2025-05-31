@@ -1,0 +1,238 @@
+{% extends 'finanzas/base.html' %}
+{% block title %}Mi Perfil{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8">
+            <!-- Información del perfil -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h4 class="card-title mb-0">Mi Perfil</h4>
+                </div>
+                <div class="card-body">
+                    
+
+                    <div class="row mb-4">
+                        <div class="col-12 col-md-4 text-center mb-4 mb-md-0">
+                            <div class="avatar-container">
+                                <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px; border-radius: 50%; font-size: 3rem;">
+                                    {{ user.first_name|default:user.email|first|upper }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <h5 class="mb-3">Información Personal</h5>
+                            <form method="post" action="{% url 'perfil_usuario' %}">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="nombre" class="form-label">Nombre</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ user.first_name }}" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Correo electrónico</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                        <input type="email" class="form-control" id="email" value="{{ user.email }}" disabled>
+                                    </div>
+                                    <small class="text-muted">El correo electrónico no se puede modificar</small>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Guardar cambios
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cambiar contraseña -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Cambiar Contraseña</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'perfil_usuario' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="password_actual" class="form-label">Contraseña actual</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="password_actual" name="password_actual">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password_nueva" class="form-label">Nueva contraseña</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                <input type="password" class="form-control" id="password_nueva" name="password_nueva">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password_confirmar" class="form-label">Confirmar nueva contraseña</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                <input type="password" class="form-control" id="password_confirmar" name="password_confirmar">
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-key me-2"></i>Actualizar contraseña
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Información de la cuenta -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Información de la Cuenta</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12 col-md-6 mb-3 mb-md-0">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Estado de la cuenta</label>
+                                <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center">
+                                    <span class="badge bg-success me-2 mb-2 mb-md-0">Activa</span>
+                                    <small>Último acceso: {{ user.last_login|date:"d/m/Y H:i" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Fecha de registro</label>
+                                <p class="mb-0">{{ user.date_joined|date:"d/m/Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.avatar-circle:hover {
+    transform: scale(1.05);
+}
+
+.card {
+    border: none;
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-right: none;
+}
+
+.form-control {
+    border-left: none;
+}
+
+.form-control:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+}
+
+.btn {
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    border: none;
+}
+
+.btn-warning {
+    background: linear-gradient(45deg, #ffc107, #ff9800);
+    border: none;
+    color: #fff;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .avatar-circle {
+        width: 100px !important;
+        height: 100px !important;
+        font-size: 2.5rem !important;
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem;
+    }
+    
+    .input-group-text {
+        padding: 0.5rem;
+    }
+    
+    .form-control {
+        padding: 0.5rem;
+    }
+    
+    .card-header {
+        padding: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .badge {
+        font-size: 0.8rem;
+    }
+}
+
+/* Ajustes para pantallas muy pequeñas */
+@media (max-width: 576px) {
+    .avatar-circle {
+        width: 80px !important;
+        height: 80px !important;
+        font-size: 2rem !important;
+    }
+    
+    .card-title {
+        font-size: 1.2rem;
+    }
+    
+    .form-label {
+        font-size: 0.9rem;
+    }
+    
+    .btn {
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %} 
