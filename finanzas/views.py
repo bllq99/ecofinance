@@ -5,7 +5,7 @@ from django.db.models import Sum
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils import timezone
 from itertools import groupby
 from django.utils.timezone import localtime, now
@@ -215,16 +215,59 @@ def dashboard(request):
 # 📄 Lista de transacciones
 @login_required
 def lista_transacciones(request):
-    mostrar_futuras = 'mostrar_futuras' in request.GET
     fecha_actual = timezone.now().date()
-    desde = fecha_actual.replace(day=1)
-    hasta = fecha_actual.replace(day=28) + relativedelta(days=4)
-    hasta = hasta - relativedelta(days=hasta.day-1)  # último día del mes
 
-    # Genera las transacciones recurrentes necesarias para el rango consultado
-    generar_transacciones_recurrentes(request.user, desde, hasta)
-
+    # Obtener parámetros de filtro
+    mes = request.GET.get('mes')
+    categoria = request.GET.get('categoria')
+    fecha_desde_str = request.GET.get('fecha_desde')
+    fecha_hasta_str = request.GET.get('fecha_hasta')
     orden = request.GET.get('orden')
+    orden_recurrente = request.GET.get('orden_recurrente')
+
+    # Convertir la cadena 'None' a None real para los parámetros recibidos
+    if mes == 'None':
+        mes = None
+    if categoria == 'None':
+        categoria = None
+    if fecha_desde_str == 'None':
+        fecha_desde_str = None
+    if fecha_hasta_str == 'None':
+        fecha_hasta_str = None
+    if orden == 'None':
+        orden = None
+
+    fecha_desde_filtro = None
+    fecha_hasta_filtro = None
+
+    # Convertir fechas de string a date objects para el filtro
+    if fecha_desde_str:
+        try:
+            fecha_desde_filtro = datetime.strptime(fecha_desde_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    if fecha_hasta_str:
+        try:
+            fecha_hasta_filtro = datetime.strptime(fecha_hasta_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    # Filtrar transacciones para la tabla principal
+    transacciones = Transaccion.objects.filter(
+        usuario=request.user,
+        fecha__lte=fecha_actual # Añadir filtro para mostrar solo transacciones hasta la fecha actual
+    )
+
+    # Aplicar filtros
+    if mes:
+        transacciones = transacciones.filter(fecha__month=mes)
+    if categoria:
+        transacciones = transacciones.filter(categoria=categoria)
+    if fecha_desde_filtro:
+        transacciones = transacciones.filter(fecha__gte=fecha_desde_filtro)
+    if fecha_hasta_filtro:
+        transacciones = transacciones.filter(fecha__lte=fecha_hasta_filtro)
 
     # Orden por defecto: fecha descendente y luego id descendente
     if not orden:
@@ -238,29 +281,35 @@ def lista_transacciones(request):
     elif orden == 'monto':
         ordenes = ['monto', 'fecha', 'id']
     elif orden == 'descripcion':
-        ordenes = ['descripcion', 'fecha', 'id']
+        ordenes = ['descripcion', '-fecha', '-id']
     elif orden == '-descripcion':
         ordenes = ['-descripcion', '-fecha', '-id']
     else:
         ordenes = [orden, '-fecha', '-id']
 
-    if mostrar_futuras:
-        transacciones = Transaccion.objects.filter(usuario=request.user).order_by(*ordenes)
-    else:
-        transacciones = Transaccion.objects.filter(usuario=request.user, fecha__lte=fecha_actual).order_by(*ordenes)
+    transacciones = transacciones.order_by(*ordenes)
 
-    # Diccionario para traducir meses al español
+    # Obtener categorías únicas para el filtro
+    categorias = Transaccion.objects.filter(usuario=request.user).values_list('categoria', flat=True).distinct()
+    # Remover valores None de categorías y ordenar
+    categorias = sorted([cat for cat in categorias if cat is not None])
+
+    # Obtener meses únicos de transacciones para el filtro (formato 'YYYY-MM')
+    meses_con_transacciones = Transaccion.objects.filter(usuario=request.user).annotate(mes_anio=TruncMonth('fecha')).values_list('mes_anio', flat=True).distinct().order_by('mes_anio')
+
+    # Formatear los meses para mostrar en el selector (ej: 'Enero 2025')
+    meses_formateados = []
     meses_espanol = {
-        'January': 'Enero', 'February': 'Febrero', 'March': 'Marzo', 'April': 'Abril',
-        'May': 'Mayo', 'June': 'Junio', 'July': 'Julio', 'August': 'Agosto',
-        'September': 'Septiembre', 'October': 'Octubre', 'November': 'Noviembre', 'December': 'Diciembre'
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+        7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
     }
+    for mes_anio_date in meses_con_transacciones:
+        if mes_anio_date:
+            mes_num = mes_anio_date.month
+            anio_num = mes_anio_date.year
+            meses_formateados.append({'value': f'{anio_num}-{mes_num:02d}', 'text': f'{meses_espanol[mes_num]} {anio_num}'})
 
-    nombre_mes = None
-    if transacciones.exists():
-        mes_actual = transacciones.first().fecha.strftime('%B %Y')
-        nombre_mes = meses_espanol[mes_actual.split()[0]] + ' ' + mes_actual.split()[1]
-
+    # Paginación
     page = request.GET.get('page', 1)
     paginator = Paginator(transacciones, 10)
     try:
@@ -270,54 +319,166 @@ def lista_transacciones(request):
     except EmptyPage:
         transacciones_paginadas = paginator.page(paginator.num_pages)
 
-    series_recurrentes = SerieRecurrente.objects.filter(usuario=request.user, activa=True)
-    today = timezone.now().date()
-
+    # Obtener series recurrentes activas con sus transacciones base en una sola consulta
     series_con_base = []
-    for serie in series_recurrentes:
-        trans_base = serie.transaccion_set.order_by('fecha').first()
-        # Buscar la próxima transacción futura
-        proxima = serie.transaccion_set.filter(fecha__gt=today).order_by('fecha').first()
-        series_con_base.append({
-            'serie': serie,
-            'trans': trans_base,
-            'proxima': proxima.fecha if proxima else None
-        })
+    series_activas = SerieRecurrente.objects.filter(
+        usuario=request.user,
+        activa=True
+    ).prefetch_related(
+        'transaccion_set'
+    )
 
-    return render(request, 'finanzas/lista_transacciones.html', {
+    # Mapeo de valores de periodicidad a texto legible
+    PERIODICIDAD_DISPLAY = {
+        'DIARIA': 'Diaria',
+        'SEMANAL': 'Semanal',
+        'MENSUAL': 'Mensual',
+        'ANUAL': 'Anual',
+    }
+
+    for serie in series_activas:
+        trans_base = serie.transaccion_set.filter(es_recurrente=True).first()
+        if trans_base:
+            # Calcular próxima fecha de manera más eficiente
+            proxima_fecha = trans_base.fecha_inicio
+            dias_desde_inicio = (fecha_actual - trans_base.fecha_inicio).days
+
+            if dias_desde_inicio > 0:
+                if trans_base.periodicidad == 'DIARIA':
+                    proxima_fecha = trans_base.fecha_inicio + timedelta(days=dias_desde_inicio + 1)
+                elif trans_base.periodicidad == 'SEMANAL':
+                    semanas = dias_desde_inicio // 7 + 1
+                    proxima_fecha = trans_base.fecha_inicio + timedelta(weeks=semanas)
+                elif trans_base.periodicidad == 'MENSUAL':
+                    # Usar relativedelta para manejo correcto de meses
+                    meses_diff = (fecha_actual.year - trans_base.fecha_inicio.year) * 12 + fecha_actual.month - trans_base.fecha_inicio.month
+                    if fecha_actual.day < trans_base.fecha_inicio.day:
+                         meses_diff -= 1
+                    next_month_num = trans_base.fecha_inicio.month + meses_diff + 1
+                    next_year = trans_base.fecha_inicio.year + (next_month_num - 1) // 12
+                    next_month = (next_month_num - 1) % 12 + 1
+                    # Intentar mantener el mismo día, manejar fin de mes
+                    try:
+                        proxima_fecha = trans_base.fecha_inicio.replace(year=next_year, month=next_month)
+                    except ValueError:
+                        # Si el día es mayor que los días en el próximo mes, usar el último día del mes
+                        proxima_fecha = trans_base.fecha_inicio.replace(year=next_year, month=next_month, day=1) + relativedelta(months=1) - timedelta(days=1)
+
+
+                elif trans_base.periodicidad == 'ANUAL':
+                    # Calcular años pasados y sumar 1
+                    años_pasados = fecha_actual.year - trans_base.fecha_inicio.year
+                    if fecha_actual < trans_base.fecha_inicio.replace(year=fecha_actual.year):
+                        años_pasados -= 1
+                    proxima_fecha = trans_base.fecha_inicio + relativedelta(years=años_pasados + 1)
+
+
+            # Verificar que la próxima fecha no exceda la fecha fin si existe
+            if trans_base.fecha_fin and proxima_fecha and proxima_fecha > trans_base.fecha_fin:
+                proxima_fecha = None
+
+            # Obtener el texto legible de la periodicidad
+            periodicidad_display = PERIODICIDAD_DISPLAY.get(trans_base.periodicidad, trans_base.periodicidad)
+
+            series_con_base.append({
+                'serie': serie,
+                'trans': trans_base,
+                'proxima_fecha': proxima_fecha,
+                'periodicidad_display': periodicidad_display # Añadir el texto legible
+            })
+
+    # Lógica de ordenamiento para series recurrentes
+    if orden_recurrente:
+        def get_sort_key(item):
+            # Obtener el campo base para ordenar (eliminar el signo menos si existe)
+            campo = orden_recurrente.lstrip('-')
+            trans_base = item['trans']
+
+            # Mapear los nombres de columna de la plantilla a los campos del modelo/diccionario
+            if campo == 'Descripción':
+                return trans_base.descripcion
+            elif campo == 'Categoría':
+                return trans_base.categoria or '' # Usar cadena vacía para None
+            elif campo == 'Tipo':
+                return trans_base.tipo
+            elif campo == 'Fecha Inicio':
+                return trans_base.fecha_inicio
+            elif campo == 'Fecha Fin':
+                return trans_base.fecha_fin or datetime.date.max # Poner Sin límite al final
+            elif campo == 'Periodicidad':
+                # Usar el texto legible para ordenar si está disponible
+                return item.get('periodicidad_display', trans_base.periodicidad)
+            elif campo == 'Próxima Fecha':
+                 # Ordenar por None (Sin límite) al final
+                return item['proxima_fecha'] if item['proxima_fecha'] is not None else datetime.date.max
+            elif campo == 'Activa':
+                return item['serie'].activa
+            # Añadir otros campos si es necesario ordenar por ellos
+            return getattr(trans_base, campo, None) # Fallback por si el campo no está mapeado
+
+        # Determinar si el orden es descendente
+        reverse_order = orden_recurrente.startswith('-')
+
+        # Ordenar la lista
+        series_con_base = sorted(series_con_base, key=get_sort_key, reverse=reverse_order)
+
+    context = {
         'transacciones': transacciones_paginadas,
         'orden_actual': orden,
-        'nombre_mes': nombre_mes,
+        'categorias': categorias,
+        'meses': meses_formateados, # Pasar la lista de meses formateados
+        'mes_actual': mes,
+        'categoria_actual': categoria,
+        'fecha_desde': fecha_desde_str,
+        'fecha_hasta': fecha_hasta_str,
         'series_con_base': series_con_base,
-        'today': today,
-    })
+        'today': fecha_actual,
+        'orden_recurrente_actual': orden_recurrente,
+    }
+
+    return render(request, 'finanzas/lista_transacciones.html', context)
 
 
 # ➕ Crear nueva transacción
 @login_required
 def nueva_transaccion(request):
     if request.method == 'POST':
-        tipo = request.POST.get('tipo')  # Capturar el tipo de transacción (INGRESO o GASTO)
+        tipo = request.POST.get('tipo')
         form = TransaccionForm(request.POST)
         if form.is_valid():
             transaccion = form.save(commit=False)
             transaccion.usuario = request.user
-            transaccion.tipo = tipo  # Asignar el tipo de transacción
+            transaccion.tipo = tipo
 
-            # Si es recurrente, asignar la fecha de inicio como la actual
             if transaccion.es_recurrente and not transaccion.fecha_inicio:
                 transaccion.fecha_inicio = timezone.now()
 
             transaccion.save()
+
+            # Si es recurrente, crear una SerieRecurrente asociada a esta transacción
+            if transaccion.es_recurrente:
+                # Asegurarse de que la transacción base tenga fecha_inicio si es recurrente
+                if not transaccion.fecha_inicio:
+                     transaccion.fecha_inicio = timezone.now().date()
+                     transaccion.save() # Guardar la transacción con la fecha de inicio si se añadió
+
+                # Crear la SerieRecurrente y asociarla a la transacción base
+                serie = SerieRecurrente.objects.create(
+                    usuario=transaccion.usuario,
+                    activa=True, # La serie está activa por defecto al crearla
+                    ultima_generada=transaccion.fecha_inicio # Inicialmente, la última generada es la primera fecha
+                )
+                transaccion.serie_recurrente = serie
+                transaccion.save() # Guardar la transacción de nuevo para asociar la serie
+
             messages.success(request, f'Transacción de tipo {tipo} registrada correctamente.')
-            return redirect('nueva_transaccion')
+            # Redirigir a la lista de transacciones después de guardar
+            return redirect('lista_transacciones')
         else:
-            # Mostrar errores del formulario
             messages.error(request, 'Por favor, corrige los errores en el formulario.' + str(form.errors))
     else:
         form = TransaccionForm()
 
-    # Obtener las últimas 5 transacciones del usuario
     ultimas_transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha', '-id')[:5]
 
     return render(request, 'finanzas/nueva_transaccion.html', {

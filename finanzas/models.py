@@ -12,6 +12,13 @@ class Transaccion(models.Model):
         ('GASTO', 'Gasto'),
     ]
 
+    PERIODICIDAD_CHOICES = [
+        ('DIARIA', 'Diaria'),
+        ('SEMANAL', 'Semanal'),
+        ('MENSUAL', 'Mensual'),
+        ('ANUAL', 'Anual'),
+    ]
+
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     descripcion = models.CharField(max_length=255)
     monto = models.DecimalField(max_digits=10, decimal_places=2)
@@ -19,7 +26,7 @@ class Transaccion(models.Model):
     fecha = models.DateField(default=timezone.now)
     categoria = models.CharField(max_length=100, blank=True, null=True)
     es_recurrente = models.BooleanField(default=False)
-    periodicidad = models.CharField(max_length=10, null=True, blank=True)
+    periodicidad = models.CharField(max_length=10, choices=PERIODICIDAD_CHOICES, null=True, blank=True)
     fecha_fin = models.DateField(null=True, blank=True)
     fecha_inicio = models.DateField(default=now)  # La fecha actual se asignará automáticamente
     serie_recurrente = models.ForeignKey('SerieRecurrente', on_delete=models.CASCADE, null=True, blank=True)

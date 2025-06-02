@@ -56,7 +56,7 @@ class TransaccionForm(forms.ModelForm):
         if es_recurrente:
             if not periodicidad:
                 raise forms.ValidationError('Debes seleccionar una periodicidad para transacciones recurrentes')
-            if fecha_fin and fecha_fin < fecha_inicio:
+            if fecha_fin and fecha_inicio and fecha_fin < fecha_inicio:
                 raise forms.ValidationError('La fecha de fin debe ser posterior a la fecha de inicio')
 
         return cleaned_data

@@ -28,6 +28,53 @@
     </a>
 </div>
 
+{# --- Inicio Filtro --- #}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="mes" class="form-label">Mes</label>
+                    <select class="form-select" id="mes" name="mes">
+                        <option value="">Todos</option>
+                        {% for m in meses %}
+                            <option value="{{ m.value }}" {% if mes_actual == m.value %}selected{% endif %}>{{ m.text }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="categoria" class="form-label">Categoría</label>
+                    <select class="form-select" id="categoria" name="categoria">
+                        <option value="">Todas</option>
+                        {% for cat in categorias %}
+                            <option value="{{ cat }}" {% if categoria_actual == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="desde" class="form-label">Desde</label>
+                    <div class="input-group">
+                        <input type="date" class="form-control" id="desde" name="desde">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="hasta" class="form-label">Hasta</label>
+                    <div class="input-group">
+                        <input type="date" class="form-control" id="hasta" name="hasta">
+                    </div>
+                </div>
+            </div>
+             <div class="row mt-3">
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary me-2"><i class="fas fa-filter me-1"></i> Filtrar</button>
+                    <a href="{% url 'lista_transacciones' %}" class="btn btn-secondary"><i class="fas fa-times me-1"></i> Limpiar</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{# --- Fin Filtro --- #}
+
 {% if nombre_mes %}
     <h4 class="mb-3">{{ nombre_mes }}</h4>
 {% endif %}
@@ -166,55 +213,112 @@
     </a>
 </div>
 
-<!-- Series recurrentes activas -->
-<div class="card mb-4">
-    <div class="card-header bg-white d-flex align-items-center justify-content-between flex-wrap">
-        <span class="fw-bold"><i class="fas fa-sync-alt me-2"></i>Transacciones Recurrentes Activas</span>
+<h2>Transacciones Recurrentes</h2>
+
+<!-- Tabla de Recurrentes Activas -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Transacciones Recurrentes Activas</h5>
     </div>
-    <div class="card-body p-0">
+    <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover">
                 <thead class="table-blue">
                     <tr>
-                        <th>Descripción</th>
-                        <th>Categoría</th>
-                        <th>Periodicidad</th>
-                        <th>Próxima Fecha</th>
-                        <th>Acciones</th>
+                        <th class="{% if orden_recurrente_actual == 'Descripción' or orden_recurrente_actual == '-Descripción' %}ordenada{% endif %}">
+                            <a href="?{{ request.GET.urlencode }}&orden_recurrente={% if orden_recurrente_actual == 'Descripción' %}-Descripción{% else %}Descripción{% endif %}" class="text-decoration-none text-dark">
+                                Descripción
+                                {% if orden_recurrente_actual == 'Descripción' %}↑{% elif orden_recurrente_actual == '-Descripción' %}↓{% else %}⇅{% endif %}
+                            </a>
+                        </th>
+                        <th class="{% if orden_recurrente_actual == 'Categoría' or orden_recurrente_actual == '-Categoría' %}ordenada{% endif %}">
+                            <a href="?{{ request.GET.urlencode }}&orden_recurrente={% if orden_recurrente_actual == 'Categoría' %}-Categoría{% else %}Categoría{% endif %}" class="text-decoration-none text-dark">
+                                Categoría
+                                {% if orden_recurrente_actual == 'Categoría' %}↑{% elif orden_recurrente_actual == '-Categoría' %}↓{% else %}⇅{% endif %}
+                            </a>
+                        </th>
+                         <th class="{% if orden_recurrente_actual == 'Tipo' or orden_recurrente_actual == '-Tipo' %}ordenada{% endif %}">
+                            <a href="?{{ request.GET.urlencode }}&orden_recurrente={% if orden_recurrente_actual == 'Tipo' %}-Tipo{% else %}Tipo{% endif %}" class="text-decoration-none text-dark">
+                                Tipo
+                                {% if orden_recurrente_actual == 'Tipo' %}↑{% elif orden_recurrente_actual == '-Tipo' %}↓{% else %}⇅{% endif %}
+                            </a>
+                        </th>
+                        <th class="{% if orden_recurrente_actual == 'Fecha Inicio' or orden_recurrente_actual == '-Fecha Inicio' %}ordenada{% endif %}">
+                             <a href="?{{ request.GET.urlencode }}&orden_recurrente={% if orden_recurrente_actual == 'Fecha Inicio' %}-Fecha Inicio{% else %}Fecha Inicio{% endif %}" class="text-decoration-none text-dark">
+                                Fecha Inicio
+                                {% if orden_recurrente_actual == 'Fecha Inicio' %}↑{% elif orden_recurrente_actual == '-Fecha Inicio' %}↓{% else %}⇅{% endif %}
+                            </a>
+                        </th>
+                        <th class="{% if orden_recurrente_actual == 'Fecha Fin' or orden_recurrente_actual == '-Fecha Fin' %}ordenada{% endif %}">
+                            <a href="?{{ request.GET.urlencode }}&orden_recurrente={% if orden_recurrente_actual == 'Fecha Fin' %}-Fecha Fin{% else %}Fecha Fin{% endif %}" class="text-decoration-none text-dark">
+                                Fecha Fin
+                                {% if orden_recurrente_actual == 'Fecha Fin' %}↑{% elif orden_recurrente_actual == '-Fecha Fin' %}↓{% else %}⇅{% endif %}
+                            </a>
+                        </th>
+                        <th class="{% if orden_recurrente_actual == 'Periodicidad' or orden_recurrente_actual == '-Periodicidad' %}ordenada{% endif %}">
+                             <a href="?{{ request.GET.urlencode }}&orden_recurrente={% if orden_recurrente_actual == 'Periodicidad' %}-Periodicidad{% else %}Periodicidad{% endif %}" class="text-decoration-none text-dark">
+                                Periodicidad
+                                {% if orden_recurrente_actual == 'Periodicidad' %}↑{% elif orden_recurrente_actual == '-Periodicidad' %}↓{% else %}⇅{% endif %}
+                            </a>
+                        </th>
+                         <th class="{% if orden_recurrente_actual == 'Próxima Fecha' or orden_recurrente_actual == '-Próxima Fecha' %}ordenada{% endif %}">
+                             <a href="?{{ request.GET.urlencode }}&orden_recurrente={% if orden_recurrente_actual == 'Próxima Fecha' %}-Próxima Fecha{% else %}Próxima Fecha{% endif %}" class="text-decoration-none text-dark">
+                                Próxima Fecha
+                                {% if orden_recurrente_actual == 'Próxima Fecha' %}↑{% elif orden_recurrente_actual == '-Próxima Fecha' %}↓{% else %}⇅{% endif %}
+                            </a>
+                        </th>
+                         <th class="{% if orden_recurrente_actual == 'Activa' or orden_recurrente_actual == '-Activa' %}ordenada{% endif %}">
+                             <a href="?{{ request.GET.urlencode }}&orden_recurrente={% if orden_recurrente_actual == 'Activa' %}-Activa{% else %}Activa{% endif %}" class="text-decoration-none text-dark">
+                                Activa
+                                {% if orden_recurrente_actual == 'Activa' %}↑{% elif orden_recurrente_actual == '-Activa' %}↓{% else %}⇅{% endif %}
+                            </a>
+                        </th>
+                        <th>Acciones</th> {# Las acciones no suelen ser ordenables #}
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in series_con_base %}
                     <tr>
-                        <td class="text-break">{{ item.trans.descripcion }}</td>
+                        <td>{{ item.trans.descripcion }}</td>
                         <td>{{ item.trans.categoria|default:"Sin categoría" }}</td>
                         <td>
-                            <span class="badge bg-info text-dark">{{ item.trans.periodicidad|title }}</span>
-                        </td>
-                        <td>
-                            {% if item.proxima %}
-                                {{ item.proxima|date:"d/m/Y" }}
+                            {% if item.trans.tipo == "INGRESO" %}
+                                <span class="badge bg-success">{{ item.trans.get_tipo_display }}</span>
                             {% else %}
-                                <span class="text-muted">-</span>
+                                <span class="badge bg-danger">{{ item.trans.get_tipo_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.trans.fecha_inicio|date:"d/m/Y" }}</td>
+                        <td>{{ item.trans.fecha_fin|date:"d/m/Y"|default:"Sin límite" }}</td>
+                        <td>
+                            <span class="badge bg-info text-dark">{{ item.periodicidad_display }}</span>
+                        </td>
+                        <td>{{ item.proxima_fecha|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if item.serie.activa and item.trans.fecha_fin is None or item.serie.activa and item.trans.fecha_fin >= today %}
+                                <span class="badge bg-success">Sí</span>
+                            {% else %}
+                                <span class="badge bg-danger">No</span>
                             {% endif %}
                         </td>
                         <td>
-                            <!-- Botón de eliminar serie recurrente -->
-                            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteSerieModal{{ item.serie.id }}">
-                                <i class="fas fa-trash-alt"></i> Eliminar
+                            <!-- Botón de eliminar -->
+                            <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ item.serie.id }}">
+                                <i class="fas fa-trash-alt me-1"></i>Eliminar
                             </button>
                         </td>
                     </tr>
-                    <!-- Modal de confirmación para eliminar serie -->
-                    <div class="modal fade" id="deleteSerieModal{{ item.serie.id }}" tabindex="-1" aria-labelledby="deleteSerieModalLabel{{ item.serie.id }}" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
+
+                    <!-- Modal de confirmación -->
+                    <div class="modal fade" id="deleteModal{{ item.serie.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ item.serie.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title" id="deleteSerieModalLabel{{ item.serie.id }}">Eliminar Recurrente</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                    <h5 class="modal-title" id="deleteModalLabel{{ item.serie.id }}">Confirmar eliminación</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    ¿Seguro que deseas eliminar esta serie recurrente? Se eliminarán todas las transacciones futuras no ocurridas.
+                                    ¿Estás seguro de que deseas eliminar esta transacción recurrente?
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -226,6 +330,10 @@
                             </div>
                         </div>
                     </div>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center">No hay transacciones recurrentes activas</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
