@@ -261,7 +261,24 @@ def lista_transacciones(request):
 
     # Aplicar filtros
     if mes:
-        transacciones = transacciones.filter(fecha__month=mes)
+        # Si el mes viene en formato YYYY-MM, extraer solo el mes
+        if isinstance(mes, str) and '-' in mes:
+            try:
+                # Intentar convertir la cadena YYYY-MM a un objeto date para extraer el mes
+                mes_date = datetime.strptime(mes, '%Y-%m').date()
+                mes_num = mes_date.month
+            except ValueError:
+                # Si hay un error en el formato, no aplicar el filtro de mes
+                mes_num = None
+        else:
+            # Si ya es solo el número del mes (o None/cadena vacía), usarlo directamente
+            try:
+                mes_num = int(mes)
+            except (ValueError, TypeError):
+                mes_num = None
+
+        if mes_num is not None:
+            transacciones = transacciones.filter(fecha__month=mes_num)
     if categoria:
         transacciones = transacciones.filter(categoria=categoria)
     if fecha_desde_filtro:
