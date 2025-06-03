@@ -5,7 +5,7 @@ from django.db.models import Sum
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.utils import timezone
 from itertools import groupby
 from django.utils.timezone import localtime, now
@@ -284,6 +284,14 @@ def lista_transacciones(request):
         ordenes = ['descripcion', '-fecha', '-id']
     elif orden == '-descripcion':
         ordenes = ['-descripcion', '-fecha', '-id']
+    elif orden == 'categoria':
+        ordenes = ['categoria', '-fecha', '-id']
+    elif orden == '-categoria':
+        ordenes = ['-categoria', '-fecha', '-id']
+    elif orden == 'tipo':
+        ordenes = ['tipo', '-fecha', '-id']
+    elif orden == '-tipo':
+        ordenes = ['-tipo', '-fecha', '-id']
     else:
         ordenes = [orden, '-fecha', '-id']
 
@@ -404,13 +412,16 @@ def lista_transacciones(request):
             elif campo == 'Fecha Inicio':
                 return trans_base.fecha_inicio
             elif campo == 'Fecha Fin':
-                return trans_base.fecha_fin or datetime.date.max # Poner Sin límite al final
+                if trans_base.fecha_fin is None:
+                    return date.max
+                return trans_base.fecha_fin
             elif campo == 'Periodicidad':
                 # Usar el texto legible para ordenar si está disponible
                 return item.get('periodicidad_display', trans_base.periodicidad)
             elif campo == 'Próxima Fecha':
-                 # Ordenar por None (Sin límite) al final
-                return item['proxima_fecha'] if item['proxima_fecha'] is not None else datetime.date.max
+                if item['proxima_fecha'] is None:
+                    return date.max
+                return item['proxima_fecha']
             elif campo == 'Activa':
                 return item['serie'].activa
             # Añadir otros campos si es necesario ordenar por ellos

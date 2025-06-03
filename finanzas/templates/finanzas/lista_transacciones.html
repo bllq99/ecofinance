@@ -97,8 +97,18 @@
                                 {% if orden_actual == 'descripcion' %}↑{% elif orden_actual == '-descripcion' %}↓{% else %}⇅{% endif %}
                             </a>
                         </th>
-                        <th>Categoría ⇅</th>
-                        <th>Tipo ⇅</th>
+                        <th class="{% if orden_actual == 'categoria' or orden_actual == '-categoria' %}ordenada{% endif %}">
+                            <a href="?orden={% if orden_actual == 'categoria' %}-categoria{% else %}categoria{% endif %}{% if transacciones.number > 1 %}&page={{ transacciones.number }}{% endif %}" class="text-decoration-none text-dark">
+                                Categoría
+                                {% if orden_actual == 'categoria' %}↑{% elif orden_actual == '-categoria' %}↓{% else %}⇅{% endif %}
+                            </a>
+                        </th>
+                        <th class="{% if orden_actual == 'tipo' or orden_actual == '-tipo' %}ordenada{% endif %}">
+                            <a href="?orden={% if orden_actual == 'tipo' %}-tipo{% else %}tipo{% endif %}{% if transacciones.number > 1 %}&page={{ transacciones.number }}{% endif %}" class="text-decoration-none text-dark">
+                                Tipo
+                                {% if orden_actual == 'tipo' %}↑{% elif orden_actual == '-tipo' %}↓{% else %}⇅{% endif %}
+                            </a>
+                        </th>
                         <th class="{% if orden_actual == '-monto' or orden_actual == 'monto' %}ordenada{% endif %}">
                             <a href="?orden={% if orden_actual == '-monto' %}monto{% else %}-monto{% endif %}{% if transacciones.number > 1 %}&page={{ transacciones.number }}{% endif %}" class="text-decoration-none text-dark">
                                 Monto
