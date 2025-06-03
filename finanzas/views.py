@@ -30,31 +30,50 @@ from dateutil.relativedelta import relativedelta
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
 @login_required
 def dashboard(request):
-    # Obtener fecha actual
     fecha_actual = timezone.now().date()
     
-    # Obtener ingresos totales
-    cantidad_transacciones = Transaccion.objects.filter(usuario=request.user).count()
+    # Obtener mes y año del parámetro mes_anio en formato YYYY-MM
+    mes_anio_str = request.GET.get('mes_anio')
 
-    # Filtrar transacciones para solo incluir las que han ocurrido hasta hoy y pertenecen al usuario
+    # Debugging: Print the raw mes_anio_str received
+    print(f"Debug (View): Raw mes_anio_str = {mes_anio_str}")
+
+    # Inicializar mes y año para el filtro y para pasar al contexto
+    mes_para_filtro = fecha_actual.month
+    anio_para_filtro = fecha_actual.year
+
+    if mes_anio_str:
+        try:
+            # Intentar parsear la cadena YYYY-MM
+            fecha_seleccionada = datetime.strptime(mes_anio_str, '%Y-%m').date()
+            mes_para_filtro = fecha_seleccionada.month
+            anio_para_filtro = fecha_seleccionada.year
+        except ValueError:
+            # Si el formato no es válido, los valores por defecto (mes/año actual) se mantienen
+            pass # No es necesario hacer nada, ya que mes_para_filtro y anio_para_filtro ya son los actuales
+
+    # Filtrar transacciones por el mes y año seleccionados (usando mes_para_filtro y anio_para_filtro)
     ingresos = Transaccion.objects.filter(
         usuario=request.user,
         tipo='INGRESO', 
-        fecha__lte=fecha_actual
+        fecha__year=anio_para_filtro,
+        fecha__month=mes_para_filtro
     ).aggregate(Sum('monto'))['monto__sum'] or 0
     
-    # Obtener gastos totales
+    # Obtener gastos totales del mes y año seleccionados (usando mes_para_filtro y anio_para_filtro)
     gastos = Transaccion.objects.filter(
         usuario=request.user,
         tipo='GASTO',
-        fecha__lte=fecha_actual
+        fecha__year=anio_para_filtro,
+        fecha__month=mes_para_filtro
     ).aggregate(Sum('monto'))['monto__sum'] or 0
     
-    # Obtener gastos por categoría
+    # Obtener gastos por categoría del mes y año seleccionados (usando mes_para_filtro y anio_para_filtro)
     gastos_por_categoria = Transaccion.objects.filter(
         usuario=request.user,
         tipo='GASTO',
-        fecha__lte=fecha_actual
+        fecha__year=anio_para_filtro,
+        fecha__month=mes_para_filtro
     ).values('categoria').annotate(
         total=Sum('monto')
     ).order_by('-total')
@@ -67,8 +86,166 @@ def dashboard(request):
         }
         for item in gastos_por_categoria
     ]
-    
-    balance = float(ingresos - gastos)
+
+    # Debugging: Print gastos_categorias data
+    print(f"Debug (View): gastos_categorias = {gastos_categorias}")
+
+    balance = float(ingresos - gastos) # Este es el balance DEL MES seleccionado
+
+    # Calcular el saldo total acumulado (independiente del filtro de mes/año)
+    ingresos_totales_acumulado = Transaccion.objects.filter(
+        usuario=request.user,
+        tipo='INGRESO'
+    ).aggregate(Sum('monto'))['monto__sum'] or 0
+
+    gastos_totales_acumulado = Transaccion.objects.filter(
+        usuario=request.user,
+        tipo='GASTO'
+    ).aggregate(Sum('monto'))['monto__sum'] or 0
+
+    saldo_total = float(ingresos_totales_acumulado - gastos_totales_acumulado)
+
+    hoy = timezone.now().date()
+
+    # Definir diccionario para traducir meses al español
+    meses_espanol = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+        7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+
+    # Obtener transacciones registradas para el mes y año seleccionados hasta hoy
+    transacciones_registradas = Transaccion.objects.filter(
+        usuario=request.user,
+        fecha__year=anio_para_filtro,
+        fecha__month=mes_para_filtro,
+        fecha__lte=hoy
+    )
+
+    # Obtener datos para el gráfico de gastos por día para el mes y año seleccionados
+    gastos_dia = (
+        Transaccion.objects
+        .filter(usuario=request.user, tipo='GASTO', fecha__year=anio_para_filtro, fecha__month=mes_para_filtro, fecha__lte=hoy)
+        .annotate(dia=TruncDay('fecha'))
+        .values('dia')
+        .annotate(total=Sum('monto'))
+        .order_by('dia')
+    )
+
+    gastos_dias_labels = []
+    gastos_dias_data = []
+    for gasto in gastos_dia:
+        gastos_dias_labels.append(gasto['dia'].strftime('%d/%m'))
+        gastos_dias_data.append(float(gasto['total']))
+
+    # Obtener datos para el gráfico de gastos por mes (últimos 12 meses con transacciones)
+    # Filtrar gastos de los últimos 12 meses
+    fecha_hace_un_año = hoy - relativedelta(months=12)
+    gastos_mes_query = (
+        Transaccion.objects
+        .filter(usuario=request.user, tipo='GASTO', fecha__gte=fecha_hace_un_año, fecha__lte=hoy) # Solo gastos hasta hoy
+        .annotate(mes=TruncMonth('fecha'))
+        .values('mes')
+        .annotate(total=Sum('monto'))
+        .order_by('mes')
+    )
+
+    meses_gastos = []
+    gastos_por_mes = []
+    max_gasto = 0
+    mes_max_gasto = ""
+
+    for gasto in gastos_mes_query:
+        if gasto['mes'] is not None:
+            mes_num = gasto['mes'].month
+            anio_num = gasto['mes'].year
+            mes_es = meses_espanol.get(mes_num, str(mes_num))
+            mes_formateado = f"{mes_es} {anio_num}"
+            meses_gastos.append(mes_formateado)
+            monto = float(gasto['total'])
+            gastos_por_mes.append(monto)
+            if monto > max_gasto:
+                max_gasto = monto
+                mes_max_gasto = mes_formateado
+
+    # Asegurarse de que las listas de meses y gastos por mes tengan el mismo tamaño para el gráfico
+    # y que estén en el orden correcto.
+    # La consulta ya ordena por mes, así que solo necesitamos formatear.
+
+    # Si no hay gastos en los últimos 12 meses, puedes ajustar esto para mostrar un mensaje en el gráfico
+
+    # Debugging: Print chart data
+    print(f"Debug (View): meses_gastos = {meses_gastos}")
+    print(f"Debug (View): gastos_por_mes = {gastos_por_mes}")
+
+    # Obtener series recurrentes activas cuya próxima fecha sea hoy
+    series_recurrentes_hoy = []
+    series_activas = SerieRecurrente.objects.filter(
+        usuario=request.user,
+        activa=True,
+        transaccion__fecha_inicio__lte=hoy # Considerar solo series que empezaron antes o hoy
+    ).prefetch_related(
+        'transaccion_set'
+    ).distinct()
+
+    for serie in series_activas:
+        trans_base = serie.transaccion_set.filter(es_recurrente=True).first()
+        if trans_base:
+            # Calcular próxima fecha (lógica similar a lista_transacciones)
+            proxima_fecha = trans_base.fecha_inicio
+            dias_desde_inicio = (hoy - trans_base.fecha_inicio).days # Usar hoy para calcular desde el inicio
+
+            if dias_desde_inicio >= 0:
+                 if trans_base.periodicidad == 'DIARIA':
+                     proxima_fecha = trans_base.fecha_inicio + timedelta(days=dias_desde_inicio + 1)
+                 elif trans_base.periodicidad == 'SEMANAL':
+                     semanas = dias_desde_inicio // 7 + 1
+                     proxima_fecha = trans_base.fecha_inicio + timedelta(weeks=semanas)
+                 elif trans_base.periodicidad == 'MENSUAL':
+                     meses_diff = (hoy.year - trans_base.fecha_inicio.year) * 12 + hoy.month - trans_base.fecha_inicio.month
+                     if hoy.day < trans_base.fecha_inicio.day:
+                          meses_diff -= 1
+                     next_month_num = trans_base.fecha_inicio.month + meses_diff + 1
+                     next_year = trans_base.fecha_inicio.year + (next_month_num - 1) // 12
+                     next_month = (next_month_num - 1) % 12 + 1
+                     try:
+                         proxima_fecha = trans_base.fecha_inicio.replace(year=next_year, month=next_month)
+                     except ValueError:
+                         proxima_fecha = trans_base.fecha_inicio.replace(year=next_year, month=next_month, day=1) + relativedelta(months=1) - timedelta(days=1)
+                 elif trans_base.periodicidad == 'ANUAL':
+                     años_pasados = hoy.year - trans_base.fecha_inicio.year
+                     if hoy < trans_base.fecha_inicio.replace(year=hoy.year):
+                         años_pasados -= 1
+                     proxima_fecha = trans_base.fecha_inicio + relativedelta(years=años_pasados + 1)
+                 else:
+                     proxima_fecha = None # Periodicidad no reconocida o futura
+            else:
+                 proxima_fecha = trans_base.fecha_inicio # Si la fecha inicio es futura, la proxima es la fecha inicio
+
+            # Verificar que la próxima fecha no exceda la fecha fin si existe y que sea hoy
+            if proxima_fecha and proxima_fecha == hoy and (trans_base.fecha_fin is None or proxima_fecha <= trans_base.fecha_fin):
+                # Crear una representación de la transacción recurrente para hoy
+                series_recurrentes_hoy.append({
+                    'descripcion': trans_base.descripcion,
+                    'monto': trans_base.monto,
+                    'tipo': trans_base.tipo,
+                    'fecha': hoy, # La fecha es hoy
+                    'categoria': trans_base.categoria,
+                    'es_recurrente': True, # Marcar como recurrente
+                    'id': f'rec_{serie.id}_{hoy.strftime('%Y%m%d')}' # ID único para la plantilla
+                })
+
+    # Combinar transacciones registradas y recurrentes de hoy
+    ultimas_transacciones_combinadas = list(transacciones_registradas) + series_recurrentes_hoy
+
+    # Ordenar la lista combinada por fecha descendente, y luego por un identificador
+    # Usar isinstance para diferenciar entre objetos Transaccion y diccionarios
+    ultimas_transacciones_combinadas.sort(key=lambda x: (
+        x.fecha if isinstance(x, Transaccion) else x.get('fecha'),
+        x.id if isinstance(x, Transaccion) else x.get('id', 0) # Usar 0 o un valor similar como default si el id no existe en el dict
+    ), reverse=True)
+
+    # Obtener las últimas 10 transacciones de la lista combinada
+    ultimas_transacciones_final = ultimas_transacciones_combinadas[:10]
     
     # Obtener objetivos y calcular días restantes
     objetivos = ObjetivoAhorro.objects.filter(usuario=request.user)
@@ -114,81 +291,21 @@ def dashboard(request):
     presupuesto = Presupuesto.objects.filter(usuario=request.user).last()
     presupuesto_monto = float(presupuesto.monto) if presupuesto else 0
 
-    # Obtener las últimas 4 transacciones
-    ultimas_transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha', '-id')[:4]
+    # Obtener la lista de meses y años con transacciones para los filtros
+    # Excluir valores nulos de mes
+    meses_anios_con_transacciones = Transaccion.objects.filter(usuario=request.user).exclude(fecha__isnull=True).annotate(
+        mes=TruncMonth('fecha')
+    ).values_list('mes', flat=True).distinct().order_by('mes')
 
-    # Obtener el mes y año actual
-    mes_actual = fecha_actual.month
-    anio_actual = fecha_actual.year
-
-    # Filtrar gastos del mes actual y agrupar por día
-    gastos_dia = (
-        Transaccion.objects
-        .filter(usuario=request.user, tipo='GASTO', fecha__year=anio_actual, fecha__month=mes_actual)
-        .annotate(dia=TruncDay('fecha'))
-        .values('dia')
-        .annotate(total=Sum('monto'))
-        .order_by('dia')
-    )
-
-    # Preparar datos para el gráfico
-    dias_mes = []
-    gastos_por_dia = []
-
-    for gasto in gastos_dia:
-        dias_mes.append(gasto['dia'].strftime('%d/%m'))
-        gastos_por_dia.append(float(gasto['total']))
-
-    # Agrupar gastos por mes
-    gastos_mes = (
-        Transaccion.objects
-        .filter(usuario=request.user, tipo='GASTO')
-        .annotate(mes=TruncMonth('fecha'))
-        .values('mes')
-        .annotate(total=Sum('monto'))
-        .order_by('mes')
-    )
-
-    # Diccionario para traducir meses al español
-    meses_espanol = {
-        'Jan': 'Ene', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Abr', 'May': 'Mayo', 'Jun': 'Jun',
-        'Jul': 'Jul', 'Aug': 'Ago', 'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dic'
-    }
-
-    meses_gastos = []
-    gastos_por_mes = []
-    max_gasto = 0
-    mes_max_gasto = ""
-
-    for gasto in gastos_mes:
-        mes_str = gasto['mes'].strftime('%b %Y')
-        # Traducir el mes al español
-        mes_abbr, anio = mes_str.split()
-        mes_es = meses_espanol.get(mes_abbr, mes_abbr)
-        meses_gastos.append(f"{mes_es} {anio}")
-        monto = float(gasto['total'])
-        gastos_por_mes.append(monto)
-        if monto > max_gasto:
-            max_gasto = monto
-            mes_max_gasto = f"{mes_es} {anio}"
-
-    # Tomar solo los últimos 3 meses
-    meses_gastos = meses_gastos[-3:]
-    gastos_por_mes = gastos_por_mes[-3:]
-
-    # Recalcular el mes de mayor gasto en este subconjunto
-    max_gasto = 0
-    mes_max_gasto = ""
-    for i, monto in enumerate(gastos_por_mes):
-        if monto > max_gasto:
-            max_gasto = monto
-            mes_max_gasto = meses_gastos[i]
-
-    hoy = timezone.now().date()
-    ultimas_transacciones = Transaccion.objects.filter(
-        usuario=request.user,
-        fecha__lte=hoy  # Solo hasta hoy
-    ).order_by('-fecha', '-id')[:10]  # O la cantidad que desees
+    # Formatear los meses y años para el selector
+    meses_anios_formateados = []
+    for mes_anio in meses_anios_con_transacciones:
+        if mes_anio:
+            mes_num = mes_anio.month
+            anio_num = mes_anio.year
+            # Usar el diccionario con claves numéricas para formatear el texto
+            mes_es = meses_espanol.get(mes_num, str(mes_num)) # Usar número de mes como clave
+            meses_anios_formateados.append({'value': f'{anio_num}-{mes_num:02d}', 'text': f'{mes_es} {anio_num}'})
 
     return render(request, 'finanzas/dashboard.html', {
         'ingresos': float(ingresos),
@@ -201,14 +318,18 @@ def dashboard(request):
         'gastos_categorias': json.dumps(gastos_categorias),
         'objetivos_ahorro': json.dumps(objetivos_ahorro),
         'total_ahorrado': float(total_ahorrado),
-        'ultimas_transacciones': ultimas_transacciones,
-        'gastos_dias_labels': dias_mes,
-        'gastos_dias_data': gastos_por_dia,
-        'meses_gastos': meses_gastos,
-        'gastos_por_mes': gastos_por_mes,
-        'mes_max_gasto': mes_max_gasto,
-        'max_gasto': max_gasto,
+        'ultimas_transacciones': ultimas_transacciones_final,
         'fecha_actual': fecha_actual,
+        'mes_seleccionado': mes_para_filtro,
+        'anio_seleccionado': anio_para_filtro,
+        'meses_anios': meses_anios_formateados, # Pasar la lista de meses/años formateados
+        'saldo_total': saldo_total, # Pasar el saldo total acumulado
+        'gastos_dias_labels': gastos_dias_labels, # Pasar datos para gráfico de gastos por día
+        'gastos_dias_data': gastos_dias_data, # Pasar datos para gráfico de gastos por día
+        'meses_gastos': meses_gastos, # Pasar datos para gráfico de gastos por mes
+        'gastos_por_mes': gastos_por_mes, # Pasar datos para gráfico de gastos por mes
+        'mes_max_gasto': mes_max_gasto, # Pasar datos para gráfico de gastos por mes
+        'max_gasto': max_gasto, # Pasar datos para gráfico de gastos por mes
     })
 
 
@@ -324,6 +445,7 @@ def lista_transacciones(request):
 
     # Formatear los meses para mostrar en el selector (ej: 'Enero 2025')
     meses_formateados = []
+    # Diccionario para traducir meses al español
     meses_espanol = {
         1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
         7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'

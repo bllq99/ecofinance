@@ -34,6 +34,29 @@
 {% block content %}
 <h1 class="mb-4">Dashboard</h1>
 
+{# --- Inicio Filtro Mes/Año --- #}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Seleccionar Periodo</h5>
+        <form method="GET" action="{% url 'dashboard' %}">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="mes_anio" class="form-label">Mes y Año</label>
+                    <select class="form-select" id="mes_anio" name="mes_anio">
+                        {% for ma in meses_anios %}
+                            <option value="{{ ma.value }}" {% if mes_seleccionado|stringformat:"02d" == ma.value|slice:"5:" and anio_seleccionado|stringformat:"d" == ma.value|slice:":4" %}selected{% endif %}>{{ ma.text }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-1"></i> Aplicar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{# --- Fin Filtro Mes/Año --- #}
+
 {% if ingresos > 0 %}
 <!-- Contenido del dashboard cuando hay transacciones -->
 <div class="row mb-4">
@@ -135,7 +158,7 @@
                 </div>
                 <div>
                     <h6 class="text-uppercase text-muted mb-1">Saldo Actual</h6>
-                    <h4 class="fw-bold text-dark mb-0">{{ balance|formato_clp }}</h4>
+                    <h4 class="fw-bold text-dark mb-0">{{ saldo_total|formato_clp }}</h4>
                 </div>
             </div>
         </div>
@@ -161,25 +184,32 @@
             </div>
             <div class="card-body" style="height: 400px; overflow-y: auto;">
                 <div class="list-group">
-                    {% for transaccion in ultimas_transacciones %}
-                    <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">{{ transaccion.descripcion }}</h6>
-                            <small>{{ transaccion.fecha|date:"d/m/Y" }}</small>
-                        </div>
-                        <p class="mb-1">
-                            <span class="badge {% if transaccion.tipo == 'INGRESO' %}bg-success{% else %}bg-danger{% endif %}">
-                                {{ transaccion.tipo }}
-                            </span>
-                            <span class="fw-bold {% if transaccion.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
-                                {{ transaccion.monto|formato_clp }}
-                            </span>
-                        </p>
-                        <small class="text-muted">{{ transaccion.categoria|default:"Sin categoría" }}</small>
-                    </div>
-                    {% empty %}
-                    <div class="list-group-item text-center text-muted">No hay transacciones recientes.</div>
-                    {% endfor %}
+                    {% if ultimas_transacciones %}
+                        {% regroup ultimas_transacciones by fecha|date:"d/m/Y" as transacciones_por_dia %}
+                        {% for dia in transacciones_por_dia %}
+                            <div class="list-group-item list-group-item-secondary fw-bold mt-2 mb-1 py-1">{{ dia.grouper }}</div>
+                            {% for transaccion in dia.list %}
+                                <div class="list-group-item py-2">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ transaccion.descripcion }}</h6>
+                                        {# La fecha ya está en el encabezado del día, no la mostramos aquí #}
+                                        {# <small>{{ transaccion.fecha|date:"d/m/Y" }}</small> #}
+                                    </div>
+                                    <p class="mb-1">
+                                        <span class="badge {% if transaccion.tipo == 'INGRESO' %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ transaccion.tipo }}
+                                        </span>
+                                        <span class="fw-bold {% if transaccion.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
+                                            {{ transaccion.monto|formato_clp }}
+                                        </span>
+                                    </p>
+                                    <small class="text-muted">{{ transaccion.categoria|default:"Sin categoría" }}</small>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item text-center text-muted">No hay transacciones recientes en este mes.</div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -225,7 +255,7 @@
                             <div class="progress" style="height: 18px;">
                                 {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
                                 <div class="progress-bar {% if progreso >= 100 %}bg-success{% elif progreso >= 75 %}bg-info{% elif progreso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar"
-                                     style="width: {{ progreso|floatformat:1 }}%;"
+                                     style="--objetivo-progreso: {{ progreso|floatformat:1 }}%; width: var(--objetivo-progreso);"
                                      aria-valuenow="{{ progreso|floatformat:1 }}" aria-valuemin="0" aria-valuemax="100">
                                     {{ progreso|floatformat:1 }}%
                                 </div>
@@ -272,88 +302,107 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+{# Usar json_script para pasar datos JSON de forma segura #}
+{{ meses_gastos|json_script:"meses-gastos-data" }}
+{{ gastos_por_mes|json_script:"gastos-por-mes-data" }}
+{{ gastos_categorias|json_script:"gastos-categorias-data" }}
+{{ objetivos_ahorro|json_script:"objetivos-ahorro-data" }}
+{{ mes_max_gasto|json_script:"mes-max-gasto" }}
+{{ max_gasto|json_script:"max-gasto" }}
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Gráfico de gastos por categoría
     var ctx = document.getElementById('balanceChart');
-    
-    // Obtener datos de gastos por categoría
-    var gastosCategorias = JSON.parse('{{ gastos_categorias|safe }}');
-    
-    // Preparar datos para el gráfico
-    var labels = [];
-    var data = [];
-    var backgroundColors = [];
-    
-    // Colores para las categorías de gastos
-    var coloresGastos = [
-        'rgba(220, 53, 69, 0.8)',   // Rojo
-        'rgba(255, 193, 7, 0.8)',   // Amarillo
-        'rgba(23, 162, 184, 0.8)',  // Azul claro
-        'rgba(111, 66, 193, 0.8)',  // Púrpura
-        'rgba(253, 126, 20, 0.8)',  // Naranja
-        'rgba(108, 117, 125, 0.8)'  // Gris
-    ];
 
-    // Agregar gastos por categoría
-    gastosCategorias.forEach(function(gasto, index) {
-        labels.push(gasto.categoria);
-        data.push(gasto.monto);
-        backgroundColors.push(coloresGastos[index % coloresGastos.length]);
-    });
-    
-    // Crear el gráfico de gastos por categoría
-    if (data.length > 0) {
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: backgroundColors,
-                    borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            font: {
-                                size: 12
-                            }
-                        }
+    // Obtener datos de gastos por categoría desde json_script
+    var gastosCategoriasElement = document.getElementById('gastos-categorias-data');
+    var parsedGastosCategorias = null; // Variable para el parseo
+
+    if (gastosCategoriasElement && gastosCategoriasElement.textContent) {
+        try {
+            // Intentar parsear el contenido
+            parsedGastosCategorias = JSON.parse(gastosCategoriasElement.textContent);
+            // console.log("Debug (JS): JSON parse successful. Result:", parsedGastosCategorias); // Eliminar debug
+
+            // Verificar si el resultado parseado es un array y tiene datos
+            if (Array.isArray(parsedGastosCategorias) && parsedGastosCategorias.length > 0) {
+                 console.log("Debug (JS): Data is valid. Preparing and creating balanceChart.", parsedGastosCategorias); // Añadir debug
+
+                // Preparar datos para el gráfico directamente aquí
+                var labels = [];
+                var data = [];
+                var backgroundColors = [];
+                
+                // Colores para las categorías de gastos
+                var coloresGastos = ['#dc3545', '#ffc107', '#6c757d'];
+
+                parsedGastosCategorias.forEach(function(gasto, index) {
+                    labels.push(gasto.categoria);
+                    data.push(gasto.monto);
+                    backgroundColors.push(coloresGastos[index % coloresGastos.length]);
+                });
+
+                // Crear el gráfico de gastos por categoría
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
+                            borderWidth: 1
+                        }]
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                var label = context.label || '';
-                                var value = context.raw || 0;
-                                var total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                var percentage = ((value / total) * 100).toFixed(1);
-                                return `${label}: $${value.toLocaleString('es-CL', {maximumFractionDigits: 0})} (${percentage}%)`;
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        var label = context.label || '';
+                                        var value = context.raw || 0;
+                                        var total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        var percentage = ((value / total) * 100).toFixed(1);
+                                        return `${label}: $${value.toLocaleString('es-CL', {maximumFractionDigits: 0})} (${percentage}%)`;
+                                    }
+                                }
                             }
                         }
                     }
-                }
+                });
             }
-        });
-    } else {
-        // Mostrar mensaje si no hay datos
-        ctx.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay datos de gastos para mostrar</div>';
+        } catch (e) {
+            console.error("Debug (JS): Error parsing gastos_categorias JSON:", e);
+            // Si falla el parseo, parsedGastosCategorias se mantiene null
+        }
     }
 });
 
 // Gráfico de gastos por mes
 var ctxGM = document.getElementById('gastosMesChart');
-var labelsGastosMes = {{ meses_gastos|safe }};
-var dataGastosMes = {{ gastos_por_mes|safe }};
-var mesMaxGasto = "{{ mes_max_gasto }}";
 
-if (labelsGastosMes.length > 0) {
+// Obtener datos de gastos por mes desde json_script
+var mesesGastosElement = document.getElementById('meses-gastos-data');
+var dataGastosMesElement = document.getElementById('gastos-por-mes-data');
+var mesMaxGastoElement = document.getElementById('mes-max-gasto');
+
+var labelsGastosMes = JSON.parse(mesesGastosElement.textContent);
+var dataGastosMes = JSON.parse(dataGastosMesElement.textContent);
+var mesMaxGasto = JSON.parse(mesMaxGastoElement.textContent);
+
+if (labelsGastosMes && labelsGastosMes.length > 0) {
     new Chart(ctxGM, {
         type: 'bar',
         data: {
