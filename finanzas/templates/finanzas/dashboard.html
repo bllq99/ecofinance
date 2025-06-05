@@ -28,13 +28,37 @@
 .progress-bar-width {
     width: var(--progress-width);
 }
+
+/* Estilo para la alerta de saldo negativo */
+.negative-balance-alert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    display: none;
+    animation: fadeInOut 5s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Alerta de saldo negativo -->
+<div id="negativeBalanceAlert" class="alert alert-danger negative-balance-alert" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <strong>¡Atención!</strong> Tu saldo actual es negativo.
+</div>
+
 <h1 class="mb-4">Dashboard</h1>
 
 {# --- Inicio Filtro Mes/Año --- #}
+{% if ingresos > 0 or gastos > 0 %}
 <div class="card mb-4">
     <div class="card-body">
         <h5 class="card-title">Seleccionar Periodo</h5>
@@ -55,9 +79,10 @@
         </form>
     </div>
 </div>
+{% endif %}
 {# --- Fin Filtro Mes/Año --- #}
 
-{% if ingresos > 0 %}
+{% if ingresos > 0 or gastos > 0 %}
 <!-- Contenido del dashboard cuando hay transacciones -->
 <div class="row mb-4">
     {% if objetivos_vencidos %}
@@ -165,25 +190,28 @@
     </div>
 </div>
 
-<!-- Gráfico circular de balance y últimas transacciones -->
+<!-- Gráfico circular y últimas transacciones -->
 <div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
+    <!-- Gráfico de Gastos -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-2">
                 <h5 class="card-title mb-0">Distribución de Gastos por Categoría</h5>
             </div>
-            <div class="card-body" style="height: 400px;">
+            <div class="card-body p-2" style="min-height: 220px;">
                 <canvas id="balanceChart"></canvas>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
+    
+    <!-- Últimas transacciones -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-2">
                 <h5 class="card-title mb-0">Últimas Transacciones</h5>
             </div>
-            <div class="card-body" style="height: 400px; overflow-y: auto;">
-                <div class="list-group">
+            <div class="card-body p-2">
+                <div class="list-group" style="height: 300px; overflow-y: auto;">
                     {% if ultimas_transacciones %}
                         {% regroup ultimas_transacciones by fecha|date:"d/m/Y" as transacciones_por_dia %}
                         {% for dia in transacciones_por_dia %}
@@ -192,8 +220,6 @@
                                 <div class="list-group-item py-2">
                                     <div class="d-flex w-100 justify-content-between">
                                         <h6 class="mb-1">{{ transaccion.descripcion }}</h6>
-                                        {# La fecha ya está en el encabezado del día, no la mostramos aquí #}
-                                        {# <small>{{ transaccion.fecha|date:"d/m/Y" }}</small> #}
                                     </div>
                                     <p class="mb-1">
                                         <span class="badge {% if transaccion.tipo == 'INGRESO' %}bg-success{% else %}bg-danger{% endif %}">
@@ -216,54 +242,52 @@
     </div>
 </div>
 
-<!-- Lista de objetivos de ahorro -->
+<!-- Gráfico de gastos por mes y objetivos de ahorro -->
 <div class="row mb-3">
-    <!-- Gráfico de gastos por mes a la izquierda -->
-    <div class="col-12 col-md-6 mb-3 mb-md-0">
+    <!-- Gráfico de gastos por mes -->
+    <div class="col-md-6 mb-4">
         <div class="card shadow-sm h-100">
             <div class="card-header bg-white py-2">
                 <h5 class="card-title mb-0">Gastos por Mes</h5>
             </div>
-            <div class="card-body p-2" style="min-height: 220px; overflow-x: auto;">
-                <div style="min-width: 320px;">
-                    <canvas id="gastosMesChart"></canvas>
-                </div>
+            <div class="card-body p-2" style="min-height: 220px;">
+                <canvas id="gastosMesChart"></canvas>
             </div>
         </div>
     </div>
-    <!-- Objetivos de ahorro a la derecha -->
-    <div class="col-12 col-md-6">
+
+    <!-- Objetivos de ahorro -->
+    <div class="col-md-6 mb-4">
         <div class="card shadow-sm h-100">
             <div class="card-header bg-white py-2">
                 <h5 class="card-title mb-0">Objetivos de Ahorro</h5>
-                <small class="text-muted">(Mostrando solo los primeros 3 objetivos)</small>
             </div>
-            <div class="card-body p-2" style="min-height: 120px; max-height: 400px; overflow-y: auto;">
+            <div class="card-body p-3">
                 {% if objetivos %}
-                    <ul class="list-group">
-                        {% for objetivo in objetivos|slice:":3" %}
-                        <li class="list-group-item py-2 px-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bold">{{ objetivo.nombre }}</span>
-                                <span class="text-muted small">{{ objetivo.fecha_limite|date:"d/m/Y" }}</span>
-                            </div>
-                            <div class="mb-1">
-                                <span class="text-dark">Ahorro: </span>
-                                <span class="fw-bold">{{ objetivo.monto_actual|formato_clp }}</span>
-                                <span class="text-muted">/ {{ objetivo.monto_objetivo|formato_clp }}</span>
-                            </div>
-                            <div class="progress" style="height: 18px;">
-                                {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
-                                <div class="progress-bar {% if progreso >= 100 %}bg-success{% elif progreso >= 75 %}bg-info{% elif progreso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar"
-                                     style="--objetivo-progreso: {{ progreso|floatformat:1 }}%; width: var(--objetivo-progreso);"
-                                     aria-valuenow="{{ progreso|floatformat:1 }}" aria-valuemin="0" aria-valuemax="100">
-                                    {{ progreso|floatformat:1 }}%
+                    <div style="height: 300px; overflow-y: auto;">
+                        <ul class="list-group list-group-flush">
+                            {% for objetivo in objetivos %}
+                            <li class="list-group-item px-0 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold">{{ objetivo.nombre }}</span>
+                                    <span class="text-muted">{{ objetivo.monto_actual|formato_clp }} / {{ objetivo.monto_objetivo|formato_clp }}</span>
                                 </div>
-                                {% endwith %}
-                            </div>
-                        </li>
-                        {% endfor %}
-                    </ul>
+                                <div class="progress" style="height: 20px;">
+                                    {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
+                                    <div class="progress-bar {% if progreso >= 100 %}bg-success{% elif progreso >= 75 %}bg-info{% elif progreso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar"
+                                         style="--objetivo-progreso: {{ progreso|floatformat:1 }}%; width: var(--objetivo-progreso);"
+                                         aria-valuenow="{{ progreso|floatformat:1 }}" aria-valuemin="0" aria-valuemax="100">
+                                        {{ progreso|floatformat:1 }}%
+                                    </div>
+                                    {% endwith %}
+                                </div>
+                                {% if not forloop.last %}
+                                <div class="mb-3"></div>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 {% else %}
                     <div class="text-center text-muted">No hay objetivos de ahorro registrados.</div>
                 {% endif %}
@@ -300,147 +324,183 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<!-- Cargar Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
 
 {# Usar json_script para pasar datos JSON de forma segura #}
-{{ meses_gastos|json_script:"meses-gastos-data" }}
-{{ gastos_por_mes|json_script:"gastos-por-mes-data" }}
 {{ gastos_categorias|json_script:"gastos-categorias-data" }}
-{{ objetivos_ahorro|json_script:"objetivos-ahorro-data" }}
-{{ mes_max_gasto|json_script:"mes-max-gasto" }}
-{{ max_gasto|json_script:"max-gasto" }}
+{{ saldo_total|json_script:"saldo-total-data" }}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gráfico de gastos por categoría
-    var ctx = document.getElementById('balanceChart');
+    // Función para mostrar la alerta de saldo negativo
+    function checkNegativeBalance() {
+        const saldoTotal = parseFloat(JSON.parse(document.getElementById('saldo-total-data').textContent));
+        const alertElement = document.getElementById('negativeBalanceAlert');
+        
+        if (saldoTotal < 0) {
+            alertElement.style.display = 'block';
+            setTimeout(() => {
+                alertElement.style.display = 'none';
+            }, 5000);
+        }
+    }
 
-    // Obtener datos de gastos por categoría desde json_script
-    var gastosCategoriasElement = document.getElementById('gastos-categorias-data');
-    var parsedGastosCategorias = null; // Variable para el parseo
+    // Verificar saldo al cargar la página
+    checkNegativeBalance();
 
-    if (gastosCategoriasElement && gastosCategoriasElement.textContent) {
+    // Verificar si hay mensaje de saldo negativo
+    {% if messages %}
+        {% for message in messages %}
+            {% if message.tags == 'warning' and message.message == 'saldo_negativo' %}
+                const alertElement = document.getElementById('negativeBalanceAlert');
+                alertElement.style.display = 'block';
+                setTimeout(() => {
+                    alertElement.style.display = 'none';
+                }, 5000);
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    // Función para crear gráfico de pastel
+    function createPieChart(canvasId, data, colors) {
+        var ctx = document.getElementById(canvasId);
+        if (!ctx) {
+            console.error('Canvas not found:', canvasId);
+            return;
+        }
+
         try {
-            // Intentar parsear el contenido
-            parsedGastosCategorias = JSON.parse(gastosCategoriasElement.textContent);
-            // console.log("Debug (JS): JSON parse successful. Result:", parsedGastosCategorias); // Eliminar debug
+            var chartData = JSON.parse(data);
+            
+            if (!chartData || !Array.isArray(chartData) || chartData.length === 0) {
+                console.error('Datos de gráfico inválidos');
+                return;
+            }
+            
+            var labels = chartData.map(item => item.categoria);
+            var values = chartData.map(item => item.monto);
 
-            // Verificar si el resultado parseado es un array y tiene datos
-            if (Array.isArray(parsedGastosCategorias) && parsedGastosCategorias.length > 0) {
-                 console.log("Debug (JS): Data is valid. Preparing and creating balanceChart.", parsedGastosCategorias); // Añadir debug
-
-                // Preparar datos para el gráfico directamente aquí
-                var labels = [];
-                var data = [];
-                var backgroundColors = [];
-                
-                // Colores para las categorías de gastos
-                var coloresGastos = ['#dc3545', '#ffc107', '#6c757d'];
-
-                parsedGastosCategorias.forEach(function(gasto, index) {
-                    labels.push(gasto.categoria);
-                    data.push(gasto.monto);
-                    backgroundColors.push(coloresGastos[index % coloresGastos.length]);
-                });
-
-                // Crear el gráfico de gastos por categoría
-                new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: data,
-                            backgroundColor: backgroundColors,
-                            borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
-                            borderWidth: 1
-                        }]
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: {
+                        position: 'right'
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'right',
-                                labels: {
-                                    font: {
-                                        size: 12
-                                    }
-                                }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        var label = context.label || '';
-                                        var value = context.raw || 0;
-                                        var total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        var percentage = ((value / total) * 100).toFixed(1);
-                                        return `${label}: $${value.toLocaleString('es-CL', {maximumFractionDigits: 0})} (${percentage}%)`;
-                                    }
-                                }
+                    tooltips: {
+                        callbacks: {
+                            label: function(tooltipItem, data) {
+                                var value = data.datasets[0].data[tooltipItem.index];
+                                var label = data.labels[tooltipItem.index];
+                                return `${label}: $${value.toLocaleString('es-CL')}`;
                             }
                         }
                     }
-                });
-            }
+                }
+            });
         } catch (e) {
-            console.error("Debug (JS): Error parsing gastos_categorias JSON:", e);
-            // Si falla el parseo, parsedGastosCategorias se mantiene null
+            console.error('Error creating pie chart:', e);
         }
     }
-});
 
-// Gráfico de gastos por mes
-var ctxGM = document.getElementById('gastosMesChart');
-
-// Obtener datos de gastos por mes desde json_script
-var mesesGastosElement = document.getElementById('meses-gastos-data');
-var dataGastosMesElement = document.getElementById('gastos-por-mes-data');
-var mesMaxGastoElement = document.getElementById('mes-max-gasto');
-
-var labelsGastosMes = JSON.parse(mesesGastosElement.textContent);
-var dataGastosMes = JSON.parse(dataGastosMesElement.textContent);
-var mesMaxGasto = JSON.parse(mesMaxGastoElement.textContent);
-
-if (labelsGastosMes && labelsGastosMes.length > 0) {
-    new Chart(ctxGM, {
-        type: 'bar',
-        data: {
-            labels: labelsGastosMes,
-            datasets: [{
-                label: 'Gasto mensual',
-                data: dataGastosMes,
-                backgroundColor: 'rgba(220, 53, 69, 0.7)'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            var value = context.raw || 0;
-                            return 'Gasto: $' + value.toLocaleString('es-CL', {maximumFractionDigits: 0});
-                        }
-                    }
-                }
+    // Crear gráfico de barras
+    var ctxBar = document.getElementById('gastosMesChart');
+    if (ctxBar) {
+        var mesesGastos = {{ meses_gastos|safe }};
+        var gastosPorMes = {{ gastos_por_mes|safe }};
+        
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: mesesGastos,
+                datasets: [{
+                    label: 'Gastos por Mes',
+                    data: gastosPorMes,
+                    backgroundColor: [
+                        '#007ACC',  // Azul profundo
+                        '#FF8C00',  // Naranjo brillante
+                        '#228B22',  // Verde oscuro
+                        '#007ACC',  // Azul profundo (se repite el patrón)
+                        '#FF8C00',  // Naranjo brillante
+                        '#228B22'   // Verde oscuro
+                    ],
+                    borderColor: [
+                        '#007ACC',
+                        '#FF8C00',
+                        '#228B22',
+                        '#007ACC',
+                        '#FF8C00',
+                        '#228B22'
+                    ],
+                    borderWidth: 1,
+                    barThickness: 140
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '$' + value.toLocaleString('es-CL', {maximumFractionDigits: 0});
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    xAxes: [{
+                        gridLines: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 0,
+                            fontSize: 12
+                        }
+                    }],
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true,
+                            callback: function(value) {
+                                return '$' + value.toLocaleString('es-CL');
+                            },
+                            fontSize: 11
+                        },
+                        gridLines: {
+                            color: "rgba(0, 0, 0, 0.05)"
+                        }
+                    }]
+                },
+                tooltips: {
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            return '$' + tooltipItem.yLabel.toLocaleString('es-CL');
                         }
                     }
                 }
             }
-        }
-    });
-} else {
-    ctxGM.parentElement.innerHTML = '<div class="text-center text-muted mt-5">No hay gastos registrados.</div>';
-}
+        });
+    }
+
+    // Colores para el gráfico de pastel
+    var gastosColors = [
+        '#4E79A7',  // Azul acero
+        '#F28E2B',  // Naranjo brillante
+        '#E15759',  // Rojo coral
+        '#76B7B2',  // Verde turquesa
+        '#59A14F',  // Verde oliva
+        '#EDC948',  // Amarillo dorado
+        '#B07AA1',  // Violeta
+        '#FF9DA7',  // Rosa pastel
+        '#9C755F',  // Café claro
+        '#BAB0AC'   // Gris
+    ];
+
+    // Crear el gráfico de pastel
+    var gastosData = document.getElementById('gastos-categorias-data');
+    if (gastosData) {
+        createPieChart('balanceChart', gastosData.textContent, gastosColors);
+    }
+});
 </script>
 {% endblock %}

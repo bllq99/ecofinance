@@ -68,7 +68,7 @@ def dashboard(request):
         fecha__month=mes_para_filtro
     ).aggregate(Sum('monto'))['monto__sum'] or 0
     
-    # Obtener gastos por categoría del mes y año seleccionados (usando mes_para_filtro y anio_para_filtro)
+    # Obtener gastos por categoría del mes y año seleccionados
     gastos_por_categoria = Transaccion.objects.filter(
         usuario=request.user,
         tipo='GASTO',
@@ -77,18 +77,42 @@ def dashboard(request):
     ).values('categoria').annotate(
         total=Sum('monto')
     ).order_by('-total')
+
+    # Obtener ingresos por categoría del mes y año seleccionados
+    ingresos_por_categoria = Transaccion.objects.filter(
+        usuario=request.user,
+        tipo='INGRESO',
+        fecha__year=anio_para_filtro,
+        fecha__month=mes_para_filtro
+    ).values('categoria').annotate(
+        total=Sum('monto')
+    ).order_by('-total')
     
-    # Convertir a lista de diccionarios con categoría y monto
+    # Convertir a lista de diccionarios con categoría y monto para gastos
     gastos_categorias = [
         {
-            'categoria': item['categoria'] or 'Sin categoría',
+            'categoria': item['categoria'] if item['categoria'] else 'Sin categoría',
             'monto': float(item['total'])
         }
         for item in gastos_por_categoria
     ]
 
-    # Debugging: Print gastos_categorias data
+    # Convertir a lista de diccionarios con categoría y monto para ingresos
+    ingresos_categorias = [
+        {
+            'categoria': item['categoria'] if item['categoria'] else 'Sin categoría',
+            'monto': float(item['total'])
+        }
+        for item in ingresos_por_categoria
+    ]
+
+    # Debugging
     print(f"Debug (View): gastos_categorias = {gastos_categorias}")
+    print(f"Debug (View): ingresos_categorias = {ingresos_categorias}")
+
+    # Serializar los datos usando json.dumps con ensure_ascii=False para manejar caracteres especiales
+    gastos_categorias_json = json.dumps(gastos_categorias, ensure_ascii=False)
+    ingresos_categorias_json = json.dumps(ingresos_categorias, ensure_ascii=False)
 
     balance = float(ingresos - gastos) # Este es el balance DEL MES seleccionado
 
@@ -137,12 +161,12 @@ def dashboard(request):
         gastos_dias_labels.append(gasto['dia'].strftime('%d/%m'))
         gastos_dias_data.append(float(gasto['total']))
 
-    # Obtener datos para el gráfico de gastos por mes (últimos 12 meses con transacciones)
-    # Filtrar gastos de los últimos 12 meses
-    fecha_hace_un_año = hoy - relativedelta(months=12)
+    # Obtener datos para el gráfico de gastos por mes (últimos 3 meses con transacciones)
+    # Filtrar gastos de los últimos 3 meses
+    fecha_hace_tres_meses = hoy - relativedelta(months=3)
     gastos_mes_query = (
         Transaccion.objects
-        .filter(usuario=request.user, tipo='GASTO', fecha__gte=fecha_hace_un_año, fecha__lte=hoy) # Solo gastos hasta hoy
+        .filter(usuario=request.user, tipo='GASTO', fecha__gte=fecha_hace_tres_meses, fecha__lte=hoy)
         .annotate(mes=TruncMonth('fecha'))
         .values('mes')
         .annotate(total=Sum('monto'))
@@ -171,7 +195,7 @@ def dashboard(request):
     # y que estén en el orden correcto.
     # La consulta ya ordena por mes, así que solo necesitamos formatear.
 
-    # Si no hay gastos en los últimos 12 meses, puedes ajustar esto para mostrar un mensaje en el gráfico
+    # Si no hay gastos en los últimos 3 meses, puedes ajustar esto para mostrar un mensaje en el gráfico
 
     # Debugging: Print chart data
     print(f"Debug (View): meses_gastos = {meses_gastos}")
@@ -307,30 +331,32 @@ def dashboard(request):
             mes_es = meses_espanol.get(mes_num, str(mes_num)) # Usar número de mes como clave
             meses_anios_formateados.append({'value': f'{anio_num}-{mes_num:02d}', 'text': f'{mes_es} {anio_num}'})
 
-    return render(request, 'finanzas/dashboard.html', {
+    # Preparar el contexto para el template
+    context = {
         'ingresos': float(ingresos),
         'gastos': float(gastos),
-        'balance': balance,
+        'saldo_total': saldo_total,
+        'ultimas_transacciones': ultimas_transacciones_final,
+        'meses_anios': meses_anios_formateados,
+        'mes_seleccionado': mes_para_filtro,
+        'anio_seleccionado': anio_para_filtro,
+        'gastos_categorias': gastos_categorias,  # Pasar los datos sin serializar
+        'ingresos_categorias': ingresos_categorias,  # Pasar los datos sin serializar
         'objetivos': objetivos,
         'presupuesto': presupuesto_monto,
         'objetivos_por_vencer': objetivos_por_vencer,
         'objetivos_vencidos': objetivos_vencidos,
-        'gastos_categorias': json.dumps(gastos_categorias),
-        'objetivos_ahorro': json.dumps(objetivos_ahorro),
+        'objetivos_ahorro': objetivos_ahorro,  # Pasar los datos sin serializar
         'total_ahorrado': float(total_ahorrado),
-        'ultimas_transacciones': ultimas_transacciones_final,
-        'fecha_actual': fecha_actual,
-        'mes_seleccionado': mes_para_filtro,
-        'anio_seleccionado': anio_para_filtro,
-        'meses_anios': meses_anios_formateados, # Pasar la lista de meses/años formateados
-        'saldo_total': saldo_total, # Pasar el saldo total acumulado
-        'gastos_dias_labels': gastos_dias_labels, # Pasar datos para gráfico de gastos por día
-        'gastos_dias_data': gastos_dias_data, # Pasar datos para gráfico de gastos por día
-        'meses_gastos': meses_gastos, # Pasar datos para gráfico de gastos por mes
-        'gastos_por_mes': gastos_por_mes, # Pasar datos para gráfico de gastos por mes
-        'mes_max_gasto': mes_max_gasto, # Pasar datos para gráfico de gastos por mes
-        'max_gasto': max_gasto, # Pasar datos para gráfico de gastos por mes
-    })
+        'gastos_dias_labels': gastos_dias_labels,
+        'gastos_dias_data': gastos_dias_data,
+        'meses_gastos': meses_gastos,
+        'gastos_por_mes': gastos_por_mes,
+        'mes_max_gasto': mes_max_gasto,
+        'max_gasto': max_gasto,
+    }
+
+    return render(request, 'finanzas/dashboard.html', context)
 
 
 # 📄 Lista de transacciones
@@ -593,48 +619,42 @@ def lista_transacciones(request):
 @login_required
 def nueva_transaccion(request):
     if request.method == 'POST':
-        tipo = request.POST.get('tipo')
         form = TransaccionForm(request.POST)
         if form.is_valid():
             transaccion = form.save(commit=False)
             transaccion.usuario = request.user
-            transaccion.tipo = tipo
-
-            if transaccion.es_recurrente and not transaccion.fecha_inicio:
-                transaccion.fecha_inicio = timezone.now()
-
+            
+            # Obtener saldo antes de la nueva transacción
+            saldo_previo = calcular_saldo_total(request.user)
+            
             transaccion.save()
-
-            # Si es recurrente, crear una SerieRecurrente asociada a esta transacción
-            if transaccion.es_recurrente:
-                # Asegurarse de que la transacción base tenga fecha_inicio si es recurrente
-                if not transaccion.fecha_inicio:
-                     transaccion.fecha_inicio = timezone.now().date()
-                     transaccion.save() # Guardar la transacción con la fecha de inicio si se añadió
-
-                # Crear la SerieRecurrente y asociarla a la transacción base
-                serie = SerieRecurrente.objects.create(
-                    usuario=transaccion.usuario,
-                    activa=True, # La serie está activa por defecto al crearla
-                    ultima_generada=transaccion.fecha_inicio # Inicialmente, la última generada es la primera fecha
-                )
-                transaccion.serie_recurrente = serie
-                transaccion.save() # Guardar la transacción de nuevo para asociar la serie
-
-            messages.success(request, f'Transacción de tipo {tipo} registrada correctamente.')
-            # Redirigir a la lista de transacciones después de guardar
-            return redirect('lista_transacciones')
-        else:
-            messages.error(request, 'Por favor, corrige los errores en el formulario.' + str(form.errors))
+            
+            # Calcular nuevo saldo
+            nuevo_saldo = calcular_saldo_total(request.user)
+            
+            # Verificar si la transacción causó saldo negativo
+            if saldo_previo >= 0 and nuevo_saldo < 0:
+                messages.warning(request, 'saldo_negativo')
+            
+            messages.success(request, '¡Transacción registrada exitosamente!')
+            return redirect('dashboard')
     else:
         form = TransaccionForm()
+    
+    return render(request, 'finanzas/nueva_transaccion.html', {'form': form})
 
-    ultimas_transacciones = Transaccion.objects.filter(usuario=request.user).order_by('-fecha', '-id')[:5]
+def calcular_saldo_total(usuario):
+    ingresos_totales = Transaccion.objects.filter(
+        usuario=usuario,
+        tipo='INGRESO'
+    ).aggregate(Sum('monto'))['monto__sum'] or 0
 
-    return render(request, 'finanzas/nueva_transaccion.html', {
-        'form': form,
-        'ultimas_transacciones': ultimas_transacciones
-    })
+    gastos_totales = Transaccion.objects.filter(
+        usuario=usuario,
+        tipo='GASTO'
+    ).aggregate(Sum('monto'))['monto__sum'] or 0
+
+    return float(ingresos_totales - gastos_totales)
 
 
 # 📄 Lista de objetivos de ahorro
@@ -1075,6 +1095,7 @@ def eliminar_recurrente(request, serie_id):
     serie.save()
     messages.success(request, "Transacción recurrente eliminada y futuras transacciones canceladas.")
     return redirect('lista_transacciones')
+
 @login_required
 def perfil_usuario(request):
     if request.method == 'POST':
