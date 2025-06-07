@@ -35,7 +35,11 @@
                                 <label for="password" class="form-label">Contraseña</label>
                                 <input type="password" class="form-control" id="password" name="password" required>
                                 <div class="mt-1">
-                                    <small><a href="#" class="text-decoration-none text-muted">¿Olvidaste tu contraseña?</a></small>
+                                    <small>
+                                        <a href="{% url 'password_reset' %}" class="text-decoration-none">
+                                            ¿Olvidaste tu contraseña?
+                                        </a>
+                                    </small>
                                 </div>
                             </div>
                             <div class="d-grid gap-2">

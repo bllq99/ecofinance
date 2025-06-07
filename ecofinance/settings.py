@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'finanzas'
+    'finanzas',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
@@ -129,3 +130,12 @@ AUTHENTICATION_BACKENDS = [
     'finanzas.backends.EmailBackend',
     'django.contrib.auth.backends.ModelBackend',  # Mantener el backend por defecto como respaldo
 ]
+
+# Configuración de correo electrónico
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = config['email']['host']
+EMAIL_PORT = int(config['email']['port'])
+EMAIL_USE_TLS = config['email'].getboolean('use_tls')
+EMAIL_HOST_USER = config['email']['user']
+EMAIL_HOST_PASSWORD = config['email']['password']
+DEFAULT_FROM_EMAIL = config['email'].get('default_from_email', EMAIL_HOST_USER)
