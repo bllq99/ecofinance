@@ -29,7 +29,7 @@ class TransaccionForm(forms.ModelForm):
 
     class Meta:
         model = Transaccion
-        fields = ['monto', 'descripcion', 'categoria', 'es_recurrente', 'periodicidad', 'fecha_fin']
+        fields = ['monto', 'descripcion', 'categoria', 'tipo', 'es_recurrente', 'periodicidad', 'fecha_fin']
         widgets = {
             'tipo': forms.Select(
                 choices=[('INGRESO', 'Ingreso'), ('GASTO', 'Gasto')],

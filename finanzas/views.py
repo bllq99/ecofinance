@@ -623,18 +623,19 @@ def nueva_transaccion(request):
         if form.is_valid():
             transaccion = form.save(commit=False)
             transaccion.usuario = request.user
-            
-            # Obtener saldo antes de la nueva transacción
-            saldo_previo = calcular_saldo_total(request.user)
-            
+            tipo = request.POST.get('tipo')
+            if tipo:
+                transaccion.tipo = tipo
+
+            # Si es recurrente, crear la serie recurrente si no existe
+            if transaccion.es_recurrente:
+                serie = SerieRecurrente.objects.create(
+                    usuario=request.user,
+                    activa=True
+                )
+                transaccion.serie_recurrente = serie
+
             transaccion.save()
-            
-            # Calcular nuevo saldo
-            nuevo_saldo = calcular_saldo_total(request.user)
-            
-            # Verificar si la transacción causó saldo negativo
-            if saldo_previo >= 0 and nuevo_saldo < 0:
-                messages.warning(request, 'saldo_negativo')
             
             messages.success(request, '¡Transacción registrada exitosamente!')
             return redirect('dashboard')
