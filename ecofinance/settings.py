@@ -110,9 +110,10 @@ THOUSAND_SEPARATOR = '.'
 DECIMAL_SEPARATOR = ','
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Para producción
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Directorios adicionales
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 # Media files
 MEDIA_URL = '/media/'

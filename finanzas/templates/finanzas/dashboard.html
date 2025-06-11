@@ -3,6 +3,17 @@
 {% load humanize %}
 {% load custom_filters %}
 {% block title %}Dashboard{% endblock %}
+{% block extra_js %}
+{% load static %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
+{{ gastos_categorias|json_script:"gastos-categorias-data" }}
+{{ saldo_total|json_script:"saldo-total-data" }}
+<script>
+window.mesesGastos = {{ meses_gastos|safe }};
+window.gastosPorMes = {{ gastos_por_mes|safe }};
+</script>
+<script src="{% static 'finanzas/dashboard.js' %}"></script>
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -34,35 +45,38 @@
     90% { opacity: 1; }
     100% { opacity: 0; }
 }
+
+.list-group-item {
+    border: none !important;
+    border-radius: 12px;
+    margin-bottom: 6px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.list-group-item:last-child {
+    margin-bottom: 0;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 
-<h1 class="mb-4">Dashboard</h1>
-
 {# --- Inicio Filtro Mes/Año --- #}
 {% if ingresos > 0 or gastos > 0 %}
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">Seleccionar Periodo</h5>
-        <form method="GET" action="{% url 'dashboard' %}">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <label for="mes_anio" class="form-label">Mes y Año</label>
-                    <select class="form-select" id="mes_anio" name="mes_anio">
-                        {% for ma in meses_anios %}
-                            <option value="{{ ma.value }}" {% if mes_seleccionado|stringformat:"02d" == ma.value|slice:"5:" and anio_seleccionado|stringformat:"d" == ma.value|slice:":4" %}selected{% endif %}>{{ ma.text }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-1"></i> Aplicar</button>
-                </div>
-            </div>
-        </form>
+<div class="row g-3 align-items-end mb-4">
+    <div class="col-md-8 d-flex flex-column justify-content-center">
+        <h2 class="mb-1">Hola, {{ nombre_usuario }}</h2>
+        <p class="text-muted mb-0" style="font-size: 1.2rem;">¡Bienvenido de nuevo!</p>
     </div>
-</div>
+    <div class="col-md-4 d-flex justify-content-end align-items-center">
+        <div class="card shadow-sm" style="min-width: 180px;">
+                <select class="form-select" id="mes_anio" name="mes_anio">
+                    {% for ma in meses_anios %}
+                        <option value="{{ ma.value }}" {% if mes_seleccionado|stringformat:"02d" == ma.value|slice:"5:" and anio_seleccionado|stringformat:"d" == ma.value|slice:":4" %}selected{% endif %}>{{ ma.text }}</option>
+                    {% endfor %}
+                </select>
+        </div>
+    </div>
 {% endif %}
 {# --- Fin Filtro Mes/Año --- #}
 
@@ -152,7 +166,9 @@
                 </div>
                 <div>
                     <h6 class="text-uppercase text-muted mb-1">Gastos Totales</h6>
-                    <h4 class="fw-bold text-danger mb-0">-{{ gastos|formato_clp }}</h4>
+                    <h4 class="fw-bold text-danger mb-0">
+                        {% if gastos > 0 %}-{{ gastos|formato_clp }}{% else %}{{ gastos|formato_clp }}{% endif %}
+                    </h4>
                 </div>
             </div>
         </div>
@@ -174,20 +190,20 @@
     </div>
 </div>
 
-<!-- Gráfico circular y últimas transacciones -->
-<div class="row mb-4">
-    <!-- Gráfico de Gastos -->
+<div class="row mb-3">
+    <!-- Gráfico circular (donut) de gastos por categoría -->
     <div class="col-md-6 mb-4">
-        <div class="card shadow-sm h-100">
+        <div class="shadow-sm h-100">
             <div class="card-header bg-white py-2">
-                <h5 class="card-title mb-0">Distribución de Gastos por Categoría</h5>
+                <h5 class="card-title mb-0 " style="text-align: center;">Gastos por Categoría</h5>
             </div>
-            <div class="card-body p-2" style="min-height: 220px;">
-                <canvas id="balanceChart"></canvas>
+            <div class="card-body p-2 d-flex flex-column align-items-center justify-content-center" style="min-height: 300px;">
+                <canvas id="balanceChart" height="260"></canvas>
+                <div id="donut-legend" class="mt-3 d-flex flex-wrap gap-3"></div>
             </div>
         </div>
     </div>
-    
+
     <!-- Últimas transacciones -->
     <div class="col-md-6 mb-4">
         <div class="card shadow-sm h-100">
@@ -195,27 +211,25 @@
                 <h5 class="card-title mb-0">Últimas Transacciones</h5>
             </div>
             <div class="card-body p-2">
-                <div class="list-group" style="height: 300px; overflow-y: auto;">
+                <div class="list-group list-group-flush" style="height: 350px; overflow-y: auto;">
                     {% if ultimas_transacciones %}
-                        {% regroup ultimas_transacciones by fecha|date:"d/m/Y" as transacciones_por_dia %}
-                        {% for dia in transacciones_por_dia %}
-                            <div class="list-group-item list-group-item-secondary fw-bold mt-2 mb-1 py-1">{{ dia.grouper }}</div>
-                            {% for transaccion in dia.list %}
-                                <div class="list-group-item py-2">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">{{ transaccion.descripcion }}</h6>
-                                    </div>
-                                    <p class="mb-1">
-                                        <span class="badge {% if transaccion.tipo == 'INGRESO' %}bg-success{% else %}bg-danger{% endif %}">
-                                            {{ transaccion.tipo }}
-                                        </span>
-                                        <span class="fw-bold {% if transaccion.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
-                                            {{ transaccion.monto|formato_clp }}
-                                        </span>
-                                    </p>
-                                    <small class="text-muted">{{ transaccion.categoria|default:"Sin categoría" }}</small>
+                        {% for transaccion in ultimas_transacciones %}
+                        <div class="list-group-item d-flex align-items-center py-3 px-2 border-0" style="background: transparent;">
+                            <!-- Ícono/categoría (puedes personalizar según tu modelo) -->
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 44px; height: 44px; background: #f5f5f5;">
+                                <i class="fas fa-receipt fa-lg text-secondary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ transaccion.descripcion }}</div>
+                                <div class="text-muted small">{{ transaccion.categoria|default:"Sin categoría" }}</div>
+                            </div>
+                            <div class="text-end ms-2">
+                                <div class="fw-bold {% if transaccion.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
+                                    {% if transaccion.tipo == 'INGRESO' %}+{% else %}-{% endif %}{{ transaccion.monto|formato_clp }}
                                 </div>
-                            {% endfor %}
+                                <div class="text-muted small">{{ transaccion.fecha|date:"d M Y" }}</div>
+                            </div>
+                        </div>
                         {% endfor %}
                     {% else %}
                         <div class="list-group-item text-center text-muted">No hay transacciones recientes en este mes.</div>
@@ -280,7 +294,7 @@
     </div>
 </div>
 
-{% else %}
+{% elif not tiene_transacciones %}
 <!-- Guía para establecer balance inicial -->
 <div class="alert alert-info text-center">
     <h4 class="alert-heading">¡Bienvenido a EcoFinance!</h4>
@@ -296,6 +310,12 @@
         </button>
     </form>
 </div>
+{% else %}
+<!-- Aquí puedes poner un mensaje motivacional o dejar el dashboard vacío -->
+<div class="alert alert-info text-center my-4">
+    ¡Has registrado tu balance inicial!<br>
+    Agrega tus primeros ingresos o gastos para comenzar a visualizar tus finanzas.
+</div>
 {% endif %}
 
 <!-- Botón flotante para agregar transacción -->
@@ -304,171 +324,4 @@
    style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
     <i class="fas fa-plus"></i>
 </a>
-
-{% endblock %}
-
-{% block extra_js %}
-<!-- Cargar Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
-
-{# Usar json_script para pasar datos JSON de forma segura #}
-{{ gastos_categorias|json_script:"gastos-categorias-data" }}
-{{ saldo_total|json_script:"saldo-total-data" }}
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Función para mostrar la alerta de saldo negativo
-    function checkNegativeBalance() {
-        const saldoTotal = parseFloat(JSON.parse(document.getElementById('saldo-total-data').textContent));
-        const alertElement = document.getElementById('negativeBalanceAlert');
-        
-        if (saldoTotal < 0) {
-            alertElement.style.display = 'block';
-            setTimeout(() => {
-                alertElement.style.display = 'none';
-            }, 5000);
-        }
-    }
-
-    // Función para crear gráfico de pastel
-    function createPieChart(canvasId, data, colors) {
-        var ctx = document.getElementById(canvasId);
-        if (!ctx) {
-            console.error('Canvas not found:', canvasId);
-            return;
-        }
-
-        try {
-            var chartData = JSON.parse(data);
-            
-            if (!chartData || !Array.isArray(chartData) || chartData.length === 0) {
-                console.error('Datos de gráfico inválidos');
-                return;
-            }
-            
-            var labels = chartData.map(item => item.categoria);
-            var values = chartData.map(item => item.monto);
-
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: colors
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    legend: {
-                        position: 'right'
-                    },
-                    tooltips: {
-                        callbacks: {
-                            label: function(tooltipItem, data) {
-                                var value = data.datasets[0].data[tooltipItem.index];
-                                var label = data.labels[tooltipItem.index];
-                                return `${label}: $${value.toLocaleString('es-CL')}`;
-                            }
-                        }
-                    }
-                }
-            });
-        } catch (e) {
-            console.error('Error creating pie chart:', e);
-        }
-    }
-
-    // Crear gráfico de barras
-    var ctxBar = document.getElementById('gastosMesChart');
-    if (ctxBar) {
-        var mesesGastos = {{ meses_gastos|safe }};
-        var gastosPorMes = {{ gastos_por_mes|safe }};
-        
-        new Chart(ctxBar, {
-            type: 'bar',
-            data: {
-                labels: mesesGastos,
-                datasets: [{
-                    label: 'Gastos por Mes',
-                    data: gastosPorMes,
-                    backgroundColor: [
-                        '#007ACC',  // Azul profundo
-                        '#FF8C00',  // Naranjo brillante
-                        '#228B22',  // Verde oscuro
-                        '#007ACC',  // Azul profundo (se repite el patrón)
-                        '#FF8C00',  // Naranjo brillante
-                        '#228B22'   // Verde oscuro
-                    ],
-                    borderColor: [
-                        '#007ACC',
-                        '#FF8C00',
-                        '#228B22',
-                        '#007ACC',
-                        '#FF8C00',
-                        '#228B22'
-                    ],
-                    borderWidth: 1,
-                    barThickness: 140
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    xAxes: [{
-                        gridLines: {
-                            display: false
-                        },
-                        ticks: {
-                            maxRotation: 0,
-                            fontSize: 12
-                        }
-                    }],
-                    yAxes: [{
-                        ticks: {
-                            beginAtZero: true,
-                            callback: function(value) {
-                                return '$' + value.toLocaleString('es-CL');
-                            },
-                            fontSize: 11
-                        },
-                        gridLines: {
-                            color: "rgba(0, 0, 0, 0.05)"
-                        }
-                    }]
-                },
-                tooltips: {
-                    callbacks: {
-                        label: function(tooltipItem, data) {
-                            return '$' + tooltipItem.yLabel.toLocaleString('es-CL');
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    // Colores para el gráfico de pastel
-    var gastosColors = [
-        '#4E79A7',  // Azul acero
-        '#F28E2B',  // Naranjo brillante
-        '#E15759',  // Rojo coral
-        '#76B7B2',  // Verde turquesa
-        '#59A14F',  // Verde oliva
-        '#EDC948',  // Amarillo dorado
-        '#B07AA1',  // Violeta
-        '#FF9DA7',  // Rosa pastel
-        '#9C755F',  // Café claro
-        '#BAB0AC'   // Gris
-    ];
-
-    // Crear el gráfico de pastel
-    var gastosData = document.getElementById('gastos-categorias-data');
-    if (gastosData) {
-        createPieChart('balanceChart', gastosData.textContent, gastosColors);
-    }
-});
-</script>
 {% endblock %}

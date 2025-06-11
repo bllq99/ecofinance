@@ -61,7 +61,7 @@ def dashboard(request):
         tipo='INGRESO', 
         fecha__year=anio_para_filtro,
         fecha__month=mes_para_filtro
-    ).aggregate(Sum('monto'))['monto__sum'] or 0
+    ).exclude(descripcion="Balance Inicial").aggregate(Sum('monto'))['monto__sum'] or 0
     
     # Obtener gastos totales del mes y año seleccionados (usando mes_para_filtro y anio_para_filtro)
     gastos = Transaccion.objects.filter(
@@ -87,7 +87,7 @@ def dashboard(request):
         tipo='INGRESO',
         fecha__year=anio_para_filtro,
         fecha__month=mes_para_filtro
-    ).values('categoria').annotate(
+    ).exclude(descripcion="Balance Inicial").values('categoria').annotate(
         total=Sum('monto')
     ).order_by('-total')
     
@@ -334,6 +334,11 @@ def dashboard(request):
             mes_es = meses_espanol.get(mes_num, str(mes_num)) # Usar número de mes como clave
             meses_anios_formateados.append({'value': f'{anio_num}-{mes_num:02d}', 'text': f'{mes_es} {anio_num}'})
 
+    nombre_usuario = request.user.first_name or request.user.username
+
+    # ¿El usuario tiene alguna transacción registrada?
+    tiene_transacciones = Transaccion.objects.filter(usuario=request.user).exists()
+
     # Preparar el contexto para el template
     context = {
         'ingresos': float(ingresos),
@@ -357,6 +362,8 @@ def dashboard(request):
         'gastos_por_mes': gastos_por_mes,
         'mes_max_gasto': mes_max_gasto,
         'max_gasto': max_gasto,
+        'nombre_usuario': nombre_usuario,
+        'tiene_transacciones': tiene_transacciones,
     }
 
     return render(request, 'finanzas/dashboard.html', context)
