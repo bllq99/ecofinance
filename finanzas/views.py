@@ -30,6 +30,9 @@ from dateutil.relativedelta import relativedelta
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
 @login_required
 def dashboard(request):
+    # Generar transacciones recurrentes hasta hoy antes de mostrar el dashboard
+    generar_transacciones_recurrentes(request.user, date.today(), date.today())
+
     fecha_actual = timezone.now().date()
     
     # Obtener mes y año del parámetro mes_anio en formato YYYY-MM

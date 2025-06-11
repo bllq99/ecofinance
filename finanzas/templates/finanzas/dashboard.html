@@ -28,17 +28,6 @@
 .progress-bar-width {
     width: var(--progress-width);
 }
-
-/* Estilo para la alerta de saldo negativo */
-.negative-balance-alert {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1050;
-    display: none;
-    animation: fadeInOut 5s ease-in-out;
-}
-
 @keyframes fadeInOut {
     0% { opacity: 0; }
     10% { opacity: 1; }
@@ -340,22 +329,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 5000);
         }
     }
-
-    // Verificar saldo al cargar la página
-    checkNegativeBalance();
-
-    // Verificar si hay mensaje de saldo negativo
-    {% if messages %}
-        {% for message in messages %}
-            {% if message.tags == 'warning' and message.message == 'saldo_negativo' %}
-                const alertElement = document.getElementById('negativeBalanceAlert');
-                alertElement.style.display = 'block';
-                setTimeout(() => {
-                    alertElement.style.display = 'none';
-                }, 5000);
-            {% endif %}
-        {% endfor %}
-    {% endif %}
 
     // Función para crear gráfico de pastel
     function createPieChart(canvasId, data, colors) {
