@@ -522,39 +522,24 @@ def lista_transacciones(request):
     for serie in series_activas:
         trans_base = serie.transaccion_set.filter(es_recurrente=True).first()
         if trans_base:
-            # Calcular próxima fecha de manera más eficiente
-            proxima_fecha = trans_base.fecha_inicio
-            dias_desde_inicio = (fecha_actual - trans_base.fecha_inicio).days
+            # Buscar la última transacción generada para esta serie
+            ultima_trans = serie.transaccion_set.filter(es_recurrente=True, fecha__lte=fecha_actual).order_by('-fecha').first()
+            if ultima_trans:
+                ultima_fecha = ultima_trans.fecha
+            else:
+                ultima_fecha = trans_base.fecha_inicio
 
-            if dias_desde_inicio > 0:
-                if trans_base.periodicidad == 'DIARIA':
-                    proxima_fecha = trans_base.fecha_inicio + timedelta(days=dias_desde_inicio + 1)
-                elif trans_base.periodicidad == 'SEMANAL':
-                    semanas = dias_desde_inicio // 7 + 1
-                    proxima_fecha = trans_base.fecha_inicio + timedelta(weeks=semanas)
-                elif trans_base.periodicidad == 'MENSUAL':
-                    # Usar relativedelta para manejo correcto de meses
-                    meses_diff = (fecha_actual.year - trans_base.fecha_inicio.year) * 12 + fecha_actual.month - trans_base.fecha_inicio.month
-                    if fecha_actual.day < trans_base.fecha_inicio.day:
-                         meses_diff -= 1
-                    next_month_num = trans_base.fecha_inicio.month + meses_diff + 1
-                    next_year = trans_base.fecha_inicio.year + (next_month_num - 1) // 12
-                    next_month = (next_month_num - 1) % 12 + 1
-                    # Intentar mantener el mismo día, manejar fin de mes
-                    try:
-                        proxima_fecha = trans_base.fecha_inicio.replace(year=next_year, month=next_month)
-                    except ValueError:
-                        # Si el día es mayor que los días en el próximo mes, usar el último día del mes
-                        proxima_fecha = trans_base.fecha_inicio.replace(year=next_year, month=next_month, day=1) + relativedelta(months=1) - timedelta(days=1)
-
-
-                elif trans_base.periodicidad == 'ANUAL':
-                    # Calcular años pasados y sumar 1
-                    años_pasados = fecha_actual.year - trans_base.fecha_inicio.year
-                    if fecha_actual < trans_base.fecha_inicio.replace(year=fecha_actual.year):
-                        años_pasados -= 1
-                    proxima_fecha = trans_base.fecha_inicio + relativedelta(years=años_pasados + 1)
-
+            # Calcular la próxima fecha según la periodicidad
+            if trans_base.periodicidad == 'DIARIA':
+                proxima_fecha = ultima_fecha + timedelta(days=1)
+            elif trans_base.periodicidad == 'SEMANAL':
+                proxima_fecha = ultima_fecha + timedelta(weeks=1)
+            elif trans_base.periodicidad == 'MENSUAL':
+                proxima_fecha = ultima_fecha + relativedelta(months=1)
+            elif trans_base.periodicidad == 'ANUAL':
+                proxima_fecha = ultima_fecha + relativedelta(years=1)
+            else:
+                proxima_fecha = None
 
             # Verificar que la próxima fecha no exceda la fecha fin si existe
             if trans_base.fecha_fin and proxima_fecha and proxima_fecha > trans_base.fecha_fin:
