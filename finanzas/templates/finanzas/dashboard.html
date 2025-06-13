@@ -171,9 +171,9 @@ window.gastosPorMes = {{ gastos_por_mes|safe }};
                         {% if ultimas_transacciones %}
                             {% for transaccion in ultimas_transacciones %}
                             <div class="list-group-item d-flex align-items-center py-3 px-2 border-0" style="background: transparent;">
-                                <!-- Ícono/categoría (puedes personalizar según tu modelo) -->
+                                <!-- Ícono/categoría -->
                                 <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 44px; height: 44px; background: #f5f5f5;">
-                                    <i class="fas fa-receipt fa-lg text-secondary"></i>
+                                    <i class="{{ transaccion.categoria|icono_categoria }} fa-lg text-secondary"></i>
                                 </div>
                                 <div class="flex-grow-1">
                                     <div class="fw-bold">{{ transaccion.descripcion }}</div>

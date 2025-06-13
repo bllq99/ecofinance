@@ -34,3 +34,17 @@ def formato_clp(value):
         return f"${value:,}".replace(",", ".")  # Agregar separadores de miles con puntos
     except (ValueError, TypeError):
         return value  # Si no es un número, devolver el valor original
+
+@register.filter
+def icono_categoria(categoria):
+    iconos = {
+        'Alimentación': 'fas fa-utensils',
+        'Transporte': 'fas fa-bus',
+        'Entretenimiento': 'fas fa-film',
+        'Salud': 'fas fa-heartbeat',
+        'Educación': 'fas fa-book',
+        'Ahorro': 'fas fa-piggy-bank',
+        'Vivienda': 'fas fa-home',
+        'Sueldo': 'fas fa-money-bill-wave',
+    }
+    return iconos.get(categoria, 'fas fa-receipt')  # Ícono por defecto
