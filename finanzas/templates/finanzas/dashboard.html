@@ -221,22 +221,31 @@ window.gastosPorMes = {{ gastos_por_mes|safe }};
                             <ul class="list-group list-group-flush">
                                 {% for objetivo in objetivos %}
                                 <li class="list-group-item px-0 mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="fw-bold">{{ objetivo.nombre }}</span>
-                                        <span class="text-muted">{{ objetivo.monto_actual|formato_clp }} / {{ objetivo.monto_objetivo|formato_clp }}</span>
+                                  <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold">{{ objetivo.nombre }}</span>
+                                    <span class="text-muted">
+                                      {{ objetivo.monto_actual|formato_clp }} / {{ objetivo.monto_objetivo|formato_clp }}
+                                    </span>
+                                  </div>
+                                  <div class="progress" style="height: 20px;">
+                                    <div
+                                      class="progress-bar 
+                                        {% if objetivo.progreso >= 100 %}bg-success
+                                        {% elif objetivo.progreso >= 75 %}bg-info
+                                        {% elif objetivo.progreso >= 50 %}bg-warning
+                                        {% else %}bg-danger{% endif %}"
+                                      role="progressbar"
+                                      style="width: {{ objetivo.progreso }}%;"
+                                      aria-valuenow="{{ objetivo.progreso }}"
+                                      aria-valuemin="0"
+                                      aria-valuemax="100"
+                                    >
+                                      {{ objetivo.progreso }}%
                                     </div>
-                                    <div class="progress" style="height: 20px;">
-                                        {% with progreso=objetivo.monto_actual|multiply:100|divide:objetivo.monto_objetivo %}
-                                        <div class="progress-bar {% if progreso >= 100 %}bg-success{% elif progreso >= 75 %}bg-info{% elif progreso >= 50 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar"
-                                             style="--objetivo-progreso: {{ progreso|floatformat:1 }}%; width: var(--objetivo-progreso);"
-                                             aria-valuenow="{{ progreso|floatformat:1 }}" aria-valuemin="0" aria-valuemax="100">
-                                            {{ progreso|floatformat:1 }}%
-                                        </div>
-                                        {% endwith %}
-                                    </div>
-                                    {% if not forloop.last %}
+                                  </div>
+                                  {% if not forloop.last %}
                                     <div class="mb-3"></div>
-                                    {% endif %}
+                                  {% endif %}
                                 </li>
                                 {% endfor %}
                             </ul>
@@ -249,9 +258,39 @@ window.gastosPorMes = {{ gastos_por_mes|safe }};
         </div>
     </div>
     {% elif not tiene_transacciones %}
-        <!-- ...Guía para establecer balance inicial... -->
+    <div class="row justify-content-center align-items-center" style="min-height: 400px;">
+        <div class="col-md-8 text-center">
+            <h3 class="fw-bold mb-3">¡Establece tu balance inicial!</h3>
+            <p class="text-muted mb-3" style="font-size: 1.15rem;">
+                Ingresa el monto total que tienes disponible actualmente para comenzar a llevar el control de tus finanzas.
+            </p>
+            <form method="post" action="{% url 'establecer_balance_inicial' %}" class="text-start mx-auto" style="max-width: 420px;">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="balance_inicial" class="form-label fw-bold">Monto inicial</label>
+                    <input type="number" class="form-control" id="balance_inicial" name="balance_inicial" placeholder="Ejemplo: 500000" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg w-100">
+                    <i class="fas fa-check me-2"></i>Establecer balance inicial
+                </button>
+            </form>
+        </div>
+    </div>
     {% else %}
-        <!-- ...Mensaje motivacional... -->
+        {% if gastos == 0 %}
+        <div class="row justify-content-center align-items-center" style="min-height: 400px;">
+            <div class="col-md-8 text-center">
+                <h3 class="fw-bold mb-3">¡Aún no tienes gastos registrados!</h3>
+                <p class="text-muted mb-3" style="font-size: 1.15rem;">
+                    Comienza a registrar tus gastos para llevar un control detallado de tus finanzas. 
+                    Esto te ayudará a identificar en qué estás gastando y a planificar mejor tu presupuesto.
+                </p>
+                <a href="{% url 'nueva_transaccion' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>Registrar gasto
+                </a>
+            </div>
+        </div>
+        {% endif %}
     {% endif %}
 
     <!-- Botón flotante para agregar transacción -->

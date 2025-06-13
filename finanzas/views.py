@@ -838,7 +838,7 @@ def establecer_balance_inicial(request):
                 descripcion="Balance Inicial",
                 monto=balance_inicial,
                 tipo="INGRESO",
-                categoria="Balance Inicial",
+                categoria="General",
                 fecha=timezone.now()
             )
 
