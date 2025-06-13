@@ -90,47 +90,6 @@
     </div>
 </form>
 
-<!-- Últimas transacciones -->
-<div class="mt-5">
-    <h3 class="mb-4">Últimas 5 Transacciones</h3>
-    {% if ultimas_transacciones %}
-    <div class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead class="table-light">
-                <tr>
-                    <th>Fecha</th>
-                    <th>Descripción</th>
-                    <th>Categoría</th>
-                    <th>Tipo</th>
-                    <th>Monto</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for transaccion in ultimas_transacciones %}
-                <tr>
-                    <td>{{ transaccion.fecha|date:"d/m/Y" }}</td>
-                    <td>{{ transaccion.descripcion }}</td>
-                    <td>{{ transaccion.categoria|default:"Sin categoría" }}</td>
-                    <td>
-                        {% if transaccion.tipo == "INGRESO" %}
-                            <span class="badge bg-success">Ingreso</span>
-                        {% else %}
-                            <span class="badge bg-danger">Gasto</span>
-                        {% endif %}
-                    </td>
-                    <td class="{% if transaccion.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">
-                        {{ transaccion.monto|formato_clp }}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p class="text-muted">No hay transacciones registradas aún.</p>
-    {% endif %}
-</div>
-
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
