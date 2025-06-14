@@ -38,7 +38,7 @@ def formato_clp(value):
 @register.filter
 def icono_categoria(categoria):
     iconos = {
-        'Alimentación': 'fas fa-utensils',
+        'Alimentos': 'fas fa-utensils',
         'Transporte': 'fas fa-bus',
         'Entretenimiento': 'fas fa-film',
         'Salud': 'fas fa-heartbeat',

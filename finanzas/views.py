@@ -805,6 +805,21 @@ def establecer_presupuesto(request):
 @login_required
 def eliminar_transaccion(request, id):
     transaccion = get_object_or_404(Transaccion, id=id, usuario=request.user)
+    
+    # Verificar si la transacción es un aporte a un objetivo de ahorro
+    if transaccion.descripcion.startswith("Aporte al objetivo:"):
+        # Extraer el nombre del objetivo desde la descripción
+        nombre_objetivo = transaccion.descripcion.replace("Aporte al objetivo: ", "").strip()
+        objetivo = ObjetivoAhorro.objects.filter(usuario=request.user, nombre=nombre_objetivo).first()
+        
+        if objetivo:
+            # Restar el monto de la transacción al progreso del objetivo
+            objetivo.monto_actual -= transaccion.monto
+            if objetivo.monto_actual < 0:
+                objetivo.monto_actual = 0  # Asegurarse de que no sea negativo
+            objetivo.save()
+
+    # Eliminar la transacción
     transaccion.delete()
     messages.success(request, "Transacción eliminada con éxito.")
     return redirect('lista_transacciones')
