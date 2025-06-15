@@ -1,11 +1,5 @@
-body {
-    background: white;
-    font-family: 'Nunito', 'Segoe UI', Arial, sans-serif;
-    color: #232946;
-}
-
 .card {
-    border-radius: 20px !important;
+    border-radius: 0.75rem;
     border: none !important;
     box-shadow: 0 6px 32px 0 rgba(35, 41, 70, 0.10);
     background: #fff;

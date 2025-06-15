@@ -4,6 +4,7 @@
 {% load custom_filters %}
 {% block title %}Dashboard{% endblock %}
 {% block extra_css %}
+{{ block.super }}
 {% load static %}
 <link rel="stylesheet" href="{% static 'finanzas/dashboard.css' %}">
 {% endblock %}
