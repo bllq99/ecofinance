@@ -38,9 +38,6 @@ def dashboard(request):
     # Obtener mes y año del parámetro mes_anio en formato YYYY-MM
     mes_anio_str = request.GET.get('mes_anio')
 
-    # Debugging: Print the raw mes_anio_str received
-    print(f"Debug (View): Raw mes_anio_str = {mes_anio_str}")
-
     # Inicializar mes y año para el filtro y para pasar al contexto
     mes_para_filtro = fecha_actual.month
     anio_para_filtro = fecha_actual.year
@@ -108,10 +105,6 @@ def dashboard(request):
         }
         for item in ingresos_por_categoria
     ]
-
-    # Debugging
-    print(f"Debug (View): gastos_categorias = {gastos_categorias}")
-    print(f"Debug (View): ingresos_categorias = {ingresos_categorias}")
 
     # Serializar los datos usando json.dumps con ensure_ascii=False para manejar caracteres especiales
     gastos_categorias_json = json.dumps(gastos_categorias, ensure_ascii=False)
@@ -199,10 +192,6 @@ def dashboard(request):
     # La consulta ya ordena por mes, así que solo necesitamos formatear.
 
     # Si no hay gastos en los últimos 3 meses, puedes ajustar esto para mostrar un mensaje en el gráfico
-
-    # Debugging: Print chart data
-    print(f"Debug (View): meses_gastos = {meses_gastos}")
-    print(f"Debug (View): gastos_por_mes = {gastos_por_mes}")
 
     # Obtener series recurrentes activas cuya próxima fecha sea hoy
     series_recurrentes_hoy = []

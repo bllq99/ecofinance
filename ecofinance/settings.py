@@ -112,7 +112,7 @@ DECIMAL_SEPARATOR = ','
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+    BASE_DIR / "finanzas" / "static",
 ]
 
 # Media files
