@@ -216,3 +216,60 @@ h2, h4, h5, .fw-bold {
     90% { opacity: 1; }
     100% { opacity: 0; }
 }
+
+/* Contenedor de objetivos con CSS Grid */
+.objetivos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Adaptable al espacio disponible */
+    gap: 1.5rem; /* Espaciado entre tarjetas */
+}
+
+/* Estilo de cada tarjeta de objetivo */
+.objetivo-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(35, 41, 70, 0.1);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: #fff; /* Texto blanco para mejor contraste */
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.objetivo-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(35, 41, 70, 0.15);
+}
+
+/* Ícono de cada objetivo */
+.objetivo-icon {
+    background: #f4f7fb;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(35, 41, 70, 0.1);
+}
+
+/* Información del objetivo */
+.objetivo-info h6 {
+    font-size: 1.1rem;
+    color: #232946;
+}
+
+.objetivo-info p {
+    font-size: 0.95rem;
+    color: #7b809a;
+}
+
+/* Barra de progreso */
+.progress {
+    background: #e0e7ef;
+    border-radius: 8px;
+    overflow: hidden;
+}

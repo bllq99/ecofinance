@@ -34,8 +34,8 @@
                     {{ objetivo.nombre }} (vencido hace {{ objetivo.dias_vencido }} días)
                     <div class="progress progress-inline">
                         <div class="progress-bar bg-danger progress-bar-inline" role="progressbar" 
-                             style="width: {{ objetivo.progreso }}%;" 
-                             aria-valuenow="{{ objetivo.progreso }}" 
+                             style="width: {{ objetivo.progreso_str }}%;" 
+                             aria-valuenow="{{ objetivo.progreso_str }}" 
                              aria-valuemin="0" 
                              aria-valuemax="100">
                         </div>
@@ -59,8 +59,8 @@
                     {{ objetivo.nombre }} (faltan {{ objetivo.dias_restantes }} días)
                     <div class="progress progress-inline">
                         <div class="progress-bar progress-bar-inline" role="progressbar" 
-                             style="width: {{ objetivo.progreso }}%;" 
-                             aria-valuenow="{{ objetivo.progreso }}" 
+                             style="width: {{ objetivo.progreso_str }}%;" 
+                             aria-valuenow="{{ objetivo.progreso_str }}" 
                              aria-valuemin="0" 
                              aria-valuemax="100">
                         </div>
@@ -101,11 +101,11 @@
                 <p>Monto actual: <strong class="text-dark">{{ objetivo.monto_actual|formato_clp }}</strong></p>
                 <div class="progress">
                     <div class="progress-bar {% if objetivo.completado %}bg-success{% endif %}" role="progressbar"
-                         style="width: {{ objetivo.progreso }}%;"
+                         style="width: {{ objetivo.progreso_str }}%;"
                          aria-valuenow="{{ objetivo.monto_actual }}"
                          aria-valuemin="0"
                          aria-valuemax="{{ objetivo.monto_objetivo }}">
-                        {{ objetivo.progreso }}%
+                        {{ objetivo.progreso_str }}%
                     </div>
                 </div>
                 {% if objetivo.completado %}

@@ -49,10 +49,9 @@ def dashboard(request):
             mes_para_filtro = fecha_seleccionada.month
             anio_para_filtro = fecha_seleccionada.year
         except ValueError:
-            # Si el formato no es válido, los valores por defecto (mes/año actual) se mantienen
-            pass # No es necesario hacer nada, ya que mes_para_filtro y anio_para_filtro ya son los actuales
+            pass
 
-    # Filtrar transacciones por el mes y año seleccionados (usando mes_para_filtro y anio_para_filtro)
+    # Filtrar transacciones por el mes y año seleccionados
     ingresos = Transaccion.objects.filter(
         usuario=request.user,
         tipo='INGRESO', 
@@ -60,15 +59,14 @@ def dashboard(request):
         fecha__month=mes_para_filtro
     ).exclude(descripcion="Balance Inicial").aggregate(Sum('monto'))['monto__sum'] or 0
     
-    # Obtener gastos totales del mes y año seleccionados (usando mes_para_filtro y anio_para_filtro)
     gastos = Transaccion.objects.filter(
         usuario=request.user,
         tipo='GASTO',
         fecha__year=anio_para_filtro,
         fecha__month=mes_para_filtro
     ).aggregate(Sum('monto'))['monto__sum'] or 0
-    
-    # Obtener gastos por categoría del mes y año seleccionados
+
+    # Obtener gastos por categoría del mes y año seleccionados (usando mes_para_filtro y anio_para_filtro)
     gastos_por_categoria = Transaccion.objects.filter(
         usuario=request.user,
         tipo='GASTO',
@@ -78,7 +76,7 @@ def dashboard(request):
         total=Sum('monto')
     ).order_by('-total')
 
-    # Obtener ingresos por categoría del mes y año seleccionados
+    # Obtener ingresos por categoría del mes y año seleccionados (usando mes_para_filtro y anio_para_filtro)
     ingresos_por_categoria = Transaccion.objects.filter(
         usuario=request.user,
         tipo='INGRESO',
@@ -265,6 +263,12 @@ def dashboard(request):
     
     # Obtener objetivos y calcular días restantes
     objetivos = ObjetivoAhorro.objects.filter(usuario=request.user)
+    colores = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']  # Lista de colores predefinidos
+    for idx, objetivo in enumerate(objetivos):
+        progreso = (float(objetivo.monto_actual) / float(objetivo.monto_objetivo) * 100) if objetivo.monto_objetivo > 0 else 0
+        objetivo.progreso = round(progreso, 1)
+        objetivo.progreso_str = f"{objetivo.progreso:.1f}"  # Formatear a un decimal
+        objetivo.color = colores[idx % len(colores)]  # Asignar color dinámico basado en la posición
     objetivos_por_vencer = []
     objetivos_vencidos = []
     
@@ -275,7 +279,7 @@ def dashboard(request):
     for objetivo in objetivos:
         # Calcular el progreso
         progreso = (float(objetivo.monto_actual) / float(objetivo.monto_objetivo) * 100) if objetivo.monto_objetivo > 0 else 0
-        
+        # objetivo.progreso = f"{progreso:.1f}"  # Formato con punto decimal
         # Agregar datos para el gráfico
         objetivos_ahorro.append({
             'nombre': objetivo.nombre,
@@ -302,6 +306,7 @@ def dashboard(request):
         
         # Agregar el progreso al objeto objetivo para usarlo en el template
         objetivo.progreso = round(progreso, 1)
+        objetivo.progreso_str = f"{objetivo.progreso:.1f}"  # Formatear a un decimal
     
     # Obtener el último presupuesto del usuario
     presupuesto = Presupuesto.objects.filter(usuario=request.user).last()
@@ -669,6 +674,8 @@ def lista_objetivos(request):
                     'dias_vencido': abs(dias_restantes),
                     'progreso': objetivo.progreso
                 })
+        objetivo.progreso_str = f"{objetivo.progreso:.1f}"  # Formatear a un decimal
+        print(f"Objetivo: {objetivo.nombre}, Progreso: {objetivo.progreso_str}%")
     
     return render(request, 'finanzas/lista_objetivos.html', {
         'objetivos': objetivos,

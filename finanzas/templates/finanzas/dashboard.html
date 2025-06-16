@@ -218,38 +218,30 @@ window.gastosPorMes = {{ gastos_por_mes|safe }};
                 </div>
                 <div class="card-body p-3">
                     {% if objetivos %}
-                        <div style="height: 300px; overflow-y: auto;">
-                            <ul class="list-group list-group-flush">
-                                {% for objetivo in objetivos %}
-                                <li class="list-group-item px-0 mb-3">
-                                  <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="fw-bold">{{ objetivo.nombre }}</span>
-                                    <span class="text-muted">
-                                      {{ objetivo.monto_actual|formato_clp }} / {{ objetivo.monto_objetivo|formato_clp }}
-                                    </span>
-                                  </div>
-                                  <div class="progress" style="height: 20px;">
-                                    <div
-                                      class="progress-bar 
-                                        {% if objetivo.progreso >= 100 %}bg-success
-                                        {% elif objetivo.progreso >= 75 %}bg-info
-                                        {% elif objetivo.progreso >= 50 %}bg-warning
-                                        {% else %}bg-danger{% endif %}"
-                                      role="progressbar"
-                                      style="width: {{ objetivo.progreso }}%;"
-                                      aria-valuenow="{{ objetivo.progreso }}"
-                                      aria-valuemin="0"
-                                      aria-valuemax="100"
-                                    >
-                                      {{ objetivo.progreso }}%
+                        <div class="objetivos-grid">
+                            {% for objetivo in objetivos %}
+                            <div class="objetivo-card">
+                                <div class="icon-container objetivo-icon" style="background-color: {{ objetivo.color }};">
+                                    <i class="fas fa-piggy-bank fa-lg"></i>
+                                </div>
+                                <div class="objetivo-info">
+                                    <h6 class="fw-bold mb-1">{{ objetivo.nombre }}</h6>
+                                    <p class="text-muted mb-2">
+                                        {{ objetivo.monto_actual|formato_clp }} / {{ objetivo.monto_objetivo|formato_clp }}
+                                    </p>
+                                    <div class="progress" style="height: 8px;">
+                                        <div
+                                            class="progress-bar"
+                                            role="progressbar"
+                                            style="width: {{ objetivo.progreso_str }}%; background-color: {{ objetivo.color }};"
+                                            aria-valuenow="{{ objetivo.progreso_str }}"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100">
+                                        </div>
                                     </div>
-                                  </div>
-                                  {% if not forloop.last %}
-                                    <div class="mb-3"></div>
-                                  {% endif %}
-                                </li>
-                                {% endfor %}
-                            </ul>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                     {% else %}
                         <div class="text-center text-muted">No hay objetivos de ahorro registrados.</div>
