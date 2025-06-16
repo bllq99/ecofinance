@@ -675,7 +675,6 @@ def lista_objetivos(request):
                     'progreso': objetivo.progreso
                 })
         objetivo.progreso_str = f"{objetivo.progreso:.1f}"  # Formatear a un decimal
-        print(f"Objetivo: {objetivo.nombre}, Progreso: {objetivo.progreso_str}%")
     
     return render(request, 'finanzas/lista_objetivos.html', {
         'objetivos': objetivos,
@@ -716,8 +715,6 @@ def editar_objetivo(request, objetivo_id):
             form.save()
             messages.success(request, f'¡Objetivo "{objetivo.nombre}" actualizado exitosamente!')
             return redirect('lista_objetivos')
-        else:
-            messages.error(request, 'Por favor, corrige los errores en el formulario.')
     else:
         form = ObjetivoForm(instance=objetivo)
 

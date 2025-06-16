@@ -55,6 +55,14 @@ port = 5432
 secret_key = tu_clave_secreta
 debug = True
 allowed_hosts = 127.0.0.1, localhost
+
+[email]
+host = smtp.gmail.com
+port = 587
+use_tls = True
+user = tu_correo@gmail.com
+password = tu_contraseña_de_aplicación
+default_from_email = tu_correo@gmail.com
 ```
 ## Base de Datos
 ```bash
