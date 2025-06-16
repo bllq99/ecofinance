@@ -47,4 +47,4 @@ def icono_categoria(categoria):
         'Vivienda': 'fas fa-home',
         'Sueldo': 'fas fa-money-bill-wave',
     }
-    return iconos.get(categoria, 'fas fa-receipt')  # Ícono por defecto
+    return iconos.get(categoria, 'fas fa-receipt') 

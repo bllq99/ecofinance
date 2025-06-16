@@ -110,7 +110,9 @@ window.gastosPorMes = {{ gastos_por_mes|safe }};
                     </div>
                     <div>
                         <h6 class="text-uppercase text-muted mb-1">Ingresos Totales</h6>
-                        <h4 class="fw-bold text-white mb-0">+{{ ingresos|formato_clp }}</h4>
+                        <h4 class="fw-bold text-white mb-0">
+                            {% if ingresos > 0 %}+{{ ingresos|formato_clp }}{% else %}{{ ingresos|formato_clp }}{% endif %}
+                        </h4>
                     </div>
                 </div>
             </div>
