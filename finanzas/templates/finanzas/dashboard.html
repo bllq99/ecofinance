@@ -12,6 +12,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
 {{ gastos_categorias|json_script:"gastos-categorias-data" }}
 {{ saldo_total|json_script:"saldo-total-data" }}
+{{ gastos_dias_labels|json_script:"gastos-dias-labels-data" }}
+{{ gastos_dias_data|json_script:"gastos-dias-data" }}
 <script>
 window.mesesGastos = {{ meses_gastos|safe }};
 window.gastosPorMes = {{ gastos_por_mes|safe }};
@@ -205,7 +207,7 @@ window.gastosPorMes = {{ gastos_por_mes|safe }};
             <!-- Gráfico de gastos por mes -->
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white py-2">
-                    <h5 class="card-title mb-0">Gastos por Mes</h5>
+                    <h5 class="card-title mb-0" style="display: none;">Gastos por Mes</h5>
                 </div>
                 <div class="card-body p-2" style="min-height: 220px;">
                     <canvas id="gastosMesChart"></canvas>

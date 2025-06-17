@@ -102,27 +102,24 @@ document.addEventListener('DOMContentLoaded', function() {
         var mesesGastos = window.mesesGastos || [];
         var gastosPorMes = window.gastosPorMes || [];
         new Chart(ctxBar, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: mesesGastos,
                 datasets: [{
                     label: 'Gastos por Mes',
                     data: gastosPorMes,
-                    backgroundColor: [
-                        '#007ACC', '#FF8C00', '#228B22',
-                        '#007ACC', '#FF8C00', '#228B22'
-                    ],
-                    borderColor: [
-                        '#007ACC', '#FF8C00', '#228B22',
-                        '#007ACC', '#FF8C00', '#228B22'
-                    ],
-                    borderWidth: 1,
-                    barThickness: 140
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)', // Rojo claro para el área
+                    borderColor: 'rgb(255, 99, 132)', // Rojo más oscuro para la línea
+                    borderWidth: 2,
+                    fill: true,
+                    pointRadius: 5,
+                    pointBackgroundColor: 'rgb(255, 99, 132)' // Color de los puntos
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                legend: { display: true },
                 scales: {
                     xAxes: [{
                         gridLines: { display: false },
