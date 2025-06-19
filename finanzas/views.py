@@ -25,6 +25,10 @@ from io import BytesIO
 from django.db.models.functions import TruncDay, TruncMonth
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from dateutil.relativedelta import relativedelta
+from openpyxl import Workbook
+from io import BytesIO
+from django.utils.timezone import now
+from django.core.mail import EmailMessage
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
@@ -1140,3 +1144,69 @@ def perfil_usuario(request):
 @login_required
 def configuracion(request):
     return render(request, 'finanzas/configuracion.html')
+
+def enviar_notificacion_transacciones(usuario):
+    # Obtener el mes y año actuales
+    fecha_actual = now()
+    mes = fecha_actual.month
+    anio = fecha_actual.year
+
+    # Generar el archivo Excel con todas las transacciones del mes
+    excel_file = generar_excel_transacciones(usuario, mes, anio)
+
+    # Crear el correo
+    asunto = f"Transacciones del mes {fecha_actual.strftime('%B %Y')}"
+    mensaje = f"Hola {usuario.first_name},\n\nAdjunto encontrarás el archivo Excel con todas las transacciones del mes {fecha_actual.strftime('%B %Y')}.\n\nSaludos,\nEcoFinance"
+    email = EmailMessage(
+        asunto,
+        mensaje,
+        to=[usuario.email]
+    )
+
+    # Adjuntar el archivo Excel
+    email.attach(f"transacciones_{mes}_{anio}.xlsx", excel_file.read(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    # Enviar el correo
+    email.send()
+
+def generar_excel_transacciones(usuario, mes, anio):
+    # Crear un libro de Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Transacciones del Mes"
+
+    # Agregar encabezados
+    ws.append(["Fecha", "Descripción", "Categoría", "Tipo", "Monto"])
+
+    # Filtrar todas las transacciones para el mes y año seleccionados
+    from .models import Transaccion
+    transacciones = Transaccion.objects.filter(
+        usuario=usuario,
+        fecha__year=anio,
+        fecha__month=mes
+    ).order_by("fecha")
+
+    # Agregar datos al archivo
+    for transaccion in transacciones:
+        ws.append([
+            transaccion.fecha.strftime("%d/%m/%Y"),
+            transaccion.descripcion,
+            transaccion.categoria or "Sin categoría",
+            transaccion.tipo,
+            transaccion.monto
+        ])
+
+    # Guardar el archivo en memoria
+    excel_file = BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+
+    return excel_file
+
+@login_required
+def enviar_transacciones_mes(request):
+    try:
+        enviar_notificacion_transacciones(request.user)
+        return JsonResponse({"message": "Correo enviado exitosamente."})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

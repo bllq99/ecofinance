@@ -35,4 +35,5 @@ urlpatterns = [
         template_name='finanzas/password_reset_complete.html'
     ), name='password_reset_complete'),
     path('configuracion/', views.configuracion, name='configuracion'),
+    path('enviar-transacciones-mes/', views.enviar_transacciones_mes, name='enviar_transacciones_mes'),
 ]
