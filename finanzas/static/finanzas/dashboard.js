@@ -187,4 +187,39 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = url.toString();
         });
     }
+
+    // Lógica para el botón de "Generar Recomendaciones"
+    const btnGenerarRecomendaciones = document.getElementById('btn-generar-recomendaciones');
+    const recomendacionesContainer = document.getElementById('recomendaciones-container');
+    const recomendacionesTexto = document.getElementById('recomendaciones-texto');
+
+    if (btnGenerarRecomendaciones && recomendacionesContainer && recomendacionesTexto) {
+        btnGenerarRecomendaciones.addEventListener('click', function () {
+            // Mostrar el contenedor de recomendaciones y el mensaje de carga
+            recomendacionesContainer.style.display = 'block';
+            recomendacionesTexto.innerHTML = `
+                <div class="d-flex flex-column align-items-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="text-muted">Estamos generando tus recomendaciones, por favor espera...</p>
+                </div>
+            `;
+
+            // Realizar la solicitud AJAX para obtener las recomendaciones
+            fetch('/generar-recomendaciones/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.recomendaciones) {
+                        // Usar la librería marked para renderizar Markdown
+                        recomendacionesTexto.innerHTML = marked.parse(data.recomendaciones);
+                    } else {
+                        recomendacionesTexto.textContent = "No se pudieron generar recomendaciones.";
+                    }
+                })
+                .catch(error => {
+                    recomendacionesTexto.textContent = "Error al obtener recomendaciones: " + error;
+                });
+        });
+    }
 });

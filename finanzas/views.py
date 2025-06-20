@@ -29,6 +29,7 @@ from openpyxl import Workbook
 from io import BytesIO
 from django.utils.timezone import now
 from django.core.mail import EmailMessage
+from .openai_utils import obtener_recomendaciones
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
@@ -1210,3 +1211,18 @@ def enviar_transacciones_mes(request):
         return JsonResponse({"message": "Correo enviado exitosamente."})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+@login_required
+def generar_recomendaciones(request):
+    # Obtener transacciones del mes actual
+    fecha_actual = timezone.now().date()
+    transacciones_mes = Transaccion.objects.filter(
+        usuario=request.user,
+        fecha__year=fecha_actual.year,
+        fecha__month=fecha_actual.month
+    ).values('fecha', 'descripcion', 'categoria', 'tipo', 'monto')
+
+    # Generar recomendaciones usando OpenAI
+    recomendaciones = obtener_recomendaciones(transacciones_mes)
+
+    return JsonResponse({'recomendaciones': recomendaciones})

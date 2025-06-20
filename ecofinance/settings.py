@@ -140,3 +140,6 @@ EMAIL_USE_TLS = config['email'].getboolean('use_tls')
 EMAIL_HOST_USER = config['email']['user']
 EMAIL_HOST_PASSWORD = config['email']['password']
 DEFAULT_FROM_EMAIL = config['email'].get('default_from_email', EMAIL_HOST_USER)
+
+# OpenAI API key
+OPENAI_API_KEY = config['openai']['api_key']

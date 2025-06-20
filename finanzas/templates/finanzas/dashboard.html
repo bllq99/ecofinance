@@ -18,13 +18,13 @@
 window.mesesGastos = {{ meses_gastos|safe }};
 window.gastosPorMes = {{ gastos_por_mes|safe }};
 </script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="{% static 'finanzas/dashboard.js' %}"></script>
 {% endblock %}
 
 {% block content %}
 
 <div class="container">
-
     {# --- Inicio Filtro Mes/Año y Bienvenida --- #}
     {% if ingresos > 0 or gastos > 0 %}
     <div class="row align-items-end mb-4">
@@ -150,6 +150,16 @@ window.gastosPorMes = {{ gastos_por_mes|safe }};
             </div>
         </div>
     </div>
+
+    <!-- Contenedor para mostrar las recomendaciones -->
+    <div id="recomendaciones-container" class="row mb-4" style="display: none;">
+    <div class="col-md-12">
+        <h2 class="text-center text-primary mb-3">Recomendaciones para mejorar tus finanzas</h2>
+        <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background-color: #f9f9f9;">
+            <div id="recomendaciones-texto" style="font-family: 'Arial', sans-serif; font-size: 1rem; line-height: 1.5; color: #333;"></div>
+        </div>
+    </div>
+</div>
 
     <!-- Gráficos y últimas transacciones -->
     <div class="row mb-3">
@@ -290,11 +300,21 @@ window.gastosPorMes = {{ gastos_por_mes|safe }};
         {% endif %}
     {% endif %}
 
-    <!-- Botón flotante para agregar transacción -->
+    <!-- Botones flotantes -->
+<div class="position-fixed bottom-0 end-0 m-4 d-flex flex-column">
+    <!-- Botón para agregar transacción -->
     <a href="{% url 'nueva_transaccion' %}" 
-       class="btn btn-primary btn-lg position-fixed bottom-0 end-0 m-4 rounded-circle shadow"
+       class="btn btn-primary btn-lg rounded-circle shadow mb-2" 
        style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
         <i class="fas fa-plus"></i>
+    </a>
+
+    <!-- Botón para generar recomendaciones -->
+    <a href="#" 
+       id="btn-generar-recomendaciones" 
+       class="btn btn-secondary btn-lg rounded-circle shadow" 
+       style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+        <i class="fas fa-lightbulb"></i>
     </a>
 </div>
 {% endblock %}

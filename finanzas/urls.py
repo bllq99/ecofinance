@@ -36,4 +36,5 @@ urlpatterns = [
     ), name='password_reset_complete'),
     path('configuracion/', views.configuracion, name='configuracion'),
     path('enviar-transacciones-mes/', views.enviar_transacciones_mes, name='enviar_transacciones_mes'),
+    path('generar-recomendaciones/', views.generar_recomendaciones, name='generar_recomendaciones'),
 ]
