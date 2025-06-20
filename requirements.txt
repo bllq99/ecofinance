@@ -10,3 +10,4 @@ typing_extensions==4.13.2
 tzdata==2025.2
 reportlab==4.4.1
 django-widget-tweaks==1.5.0
+openai==1.88.0

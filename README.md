@@ -63,6 +63,9 @@ use_tls = True
 user = tu_correo@gmail.com
 password = tu_contraseña_de_aplicación
 default_from_email = tu_correo@gmail.com
+
+[openai]
+api_key = tu_api_key
 ```
 ## Base de Datos
 ```bash
