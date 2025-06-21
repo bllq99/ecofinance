@@ -34,7 +34,6 @@ urlpatterns = [
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(
         template_name='finanzas/password_reset_complete.html'
     ), name='password_reset_complete'),
-    path('configuracion/', views.configuracion, name='configuracion'),
     path('enviar-transacciones-mes/', views.enviar_transacciones_mes, name='enviar_transacciones_mes'),
     path('generar-recomendaciones/', views.generar_recomendaciones, name='generar_recomendaciones'),
 ]

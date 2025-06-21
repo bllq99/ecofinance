@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Transaccion, ObjetivoAhorro, Presupuesto, SerieRecurrente
 from .forms import TransaccionForm, ObjetivoForm, PresupuestoForm
 from django.db.models import Sum
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib import messages
 from django.contrib.auth.models import User
 from datetime import datetime, timedelta, date
@@ -27,7 +27,6 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from dateutil.relativedelta import relativedelta
 from openpyxl import Workbook
 from io import BytesIO
-from django.utils.timezone import now
 from django.core.mail import EmailMessage
 from .openai_utils import obtener_recomendaciones
 
@@ -1108,56 +1107,46 @@ def eliminar_recurrente(request, serie_id):
 @login_required
 def perfil_usuario(request):
     if request.method == 'POST':
-        # Obtener los datos del formulario
-        nombre = request.POST.get('nombre')
-        email = request.POST.get('email')
+        # Manejar la actualización del nombre
+        if 'nombre' in request.POST:
+            nombre = request.POST.get('nombre')
+            if nombre:
+                request.user.first_name = nombre
+                request.user.save()
+                messages.success(request, 'Tu nombre ha sido actualizado.')
+
+        # Manejar el cambio de contraseña
         password_actual = request.POST.get('password_actual')
         password_nueva = request.POST.get('password_nueva')
         password_confirmar = request.POST.get('password_confirmar')
 
-        # Actualizar nombre
-        request.user.first_name = nombre
-        request.user.save()
-
-        # Si se proporcionó una nueva contraseña
         if password_nueva:
             if not request.user.check_password(password_actual):
-                messages.error(request, 'La contraseña actual es incorrecta')
-                return redirect('perfil_usuario')
-            
-            if password_nueva != password_confirmar:
-                messages.error(request, 'Las nuevas contraseñas no coinciden')
-                return redirect('perfil_usuario')
-            
-            request.user.set_password(password_nueva)
-            request.user.save()
-            messages.success(request, 'Contraseña actualizada correctamente')
-            # Reautenticar al usuario después de cambiar la contraseña
-            login(request, request.user)
+                messages.error(request, 'La contraseña actual es incorrecta.')
+            elif password_nueva != password_confirmar:
+                messages.error(request, 'Las nuevas contraseñas no coinciden.')
+            else:
+                request.user.set_password(password_nueva)
+                request.user.save()
+                update_session_auth_hash(request, request.user)  # Importante para mantener la sesión
+                messages.success(request, 'Tu contraseña ha sido actualizada correctamente.')
         
-        messages.success(request, 'Perfil actualizado correctamente')
         return redirect('perfil_usuario')
 
-    return render(request, 'finanzas/perfil.html', {
-        'user': request.user
-    })
-
-@login_required
-def configuracion(request):
-    return render(request, 'finanzas/configuracion.html')
+    return render(request, 'finanzas/perfil.html')
 
 def enviar_notificacion_transacciones(usuario):
     # Obtener el mes y año actuales
-    fecha_actual = now()
-    mes = fecha_actual.month
-    anio = fecha_actual.year
+    ahora = timezone.now()
+    mes = ahora.month
+    anio = ahora.year
 
     # Generar el archivo Excel con todas las transacciones del mes
     excel_file = generar_excel_transacciones(usuario, mes, anio)
 
     # Crear el correo
-    asunto = f"Transacciones del mes {fecha_actual.strftime('%B %Y')}"
-    mensaje = f"Hola {usuario.first_name},\n\nAdjunto encontrarás el archivo Excel con todas las transacciones del mes {fecha_actual.strftime('%B %Y')}.\n\nSaludos,\nEcoFinance"
+    asunto = f"Transacciones del mes {ahora.strftime('%B %Y')}"
+    mensaje = f"Hola {usuario.first_name},\n\nAdjunto encontrarás el archivo Excel con todas las transacciones del mes {ahora.strftime('%B %Y')}.\n\nSaludos,\nEcoFinance"
     email = EmailMessage(
         asunto,
         mensaje,
