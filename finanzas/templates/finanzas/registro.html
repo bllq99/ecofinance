@@ -1,9 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Registro - Finanzas Personales</title>
+    <title>Registro - EcoFinance</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="{% static 'finanzas/logo.png' %}" type="image/png">
     <!-- Estilos básicos con Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -13,12 +15,15 @@
             <div class="col-md-6 col-lg-4">
                 <div class="card shadow">
                     <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <img src="{% static 'finanzas/logo.png' %}" alt="EcoFinance Logo" class="img-fluid" style="max-width: 150px;">
+                        </div>
                         <h2 class="text-center mb-4">Crear Cuenta</h2>
                         <form method="post" action="{% url 'registro' %}">
                             {% csrf_token %}
                             <div class="mb-3">
                                 <label for="nombre" class="form-label">Nombre</label>
-                                <input type="text" class="form-control" id="nombre" name="nombre" required>
+                                <input type="text" class="form-control" id="nombre" name="first_name" required>
                             </div>
                             <div class="mb-3">
                                 <label for="email" class="form-label">Correo electrónico</label>
@@ -26,15 +31,19 @@
                             </div>
                             <div class="mb-3">
                                 <label for="password1" class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" id="password1" name="password1" required>
+                                <input type="password" class="form-control" id="password1" name="password" required>
                             </div>
                             <div class="mb-3">
                                 <label for="password2" class="form-label">Confirmar contraseña</label>
                                 <input type="password" class="form-control" id="password2" name="password2" required>
                             </div>
-                            {% if error %}
+                            {% if form.errors %}
                             <div class="alert alert-danger" role="alert">
-                                {{ error }}
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                {% endfor %}
                             </div>
                             {% endif %}
                             <div class="d-grid gap-2">

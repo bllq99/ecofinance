@@ -1,9 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Iniciar Sesión - Finanzas Personales</title>
+    <title>Iniciar Sesión - EcoFinance</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="{% static 'finanzas/logo.png' %}" type="image/png">
     <!-- Estilos básicos con Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -13,6 +15,9 @@
             <div class="col-md-6 col-lg-4">
                 <div class="card shadow">
                     <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <img src="{% static 'finanzas/logo.png' %}" alt="EcoFinance Logo" class="img-fluid" style="max-width: 150px;">
+                        </div>
                         <h2 class="text-center mb-4">Iniciar Sesión</h2>
                         
                         {% if messages %}
@@ -29,16 +34,14 @@
                             {% csrf_token %}
                             <div class="mb-3">
                                 <label for="email" class="form-label">Correo electrónico</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                                <input type="email" class="form-control" id="email" name="username" required>
                             </div>
                             <div class="mb-3">
                                 <label for="password" class="form-label">Contraseña</label>
                                 <input type="password" class="form-control" id="password" name="password" required>
                                 <div class="mt-1">
                                     <small>
-                                        <a href="{% url 'password_reset' %}" class="text-decoration-none">
-                                            ¿Olvidaste tu contraseña?
-                                        </a>
+                                        <a href="{% url 'password_reset' %}" class="text-decoration-none">¿Olvidaste tu contraseña?</a>
                                     </small>
                                 </div>
                             </div>
