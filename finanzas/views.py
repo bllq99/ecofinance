@@ -5,6 +5,8 @@ from django.db.models import Sum
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib import messages
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 from itertools import groupby
@@ -27,13 +29,48 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from dateutil.relativedelta import relativedelta
 from openpyxl import Workbook
 from io import BytesIO
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, send_mail
 from .openai_utils import obtener_recomendaciones
+from django.conf import settings
 
 
 # 🏠 Dashboard: muestra resumen de ingresos, gastos y objetivos
 @login_required
 def dashboard(request):
+    # --- Notificaciones de objetivos por vencer ---
+    email_enabled = request.session.get('email_notifications', True)
+    goal_updates_enabled = request.session.get('goal_updates_notifications', False)
+
+    if email_enabled and goal_updates_enabled:
+        hoy = timezone.now().date()
+        limite_vencimiento = hoy + timedelta(days=7)
+        
+        # Objetivos que están por vencer en los próximos 7 días y no están completados
+        objetivos_por_vencer = ObjetivoAhorro.objects.filter(
+            usuario=request.user,
+            fecha_limite__gte=hoy,
+            fecha_limite__lte=limite_vencimiento,
+            completado=False
+        )
+
+        # Usar la sesión para evitar enviar notificaciones repetidas
+        notificaciones_enviadas = request.session.get('notif_vencimiento_enviadas', [])
+        
+        for objetivo in objetivos_por_vencer:
+            if objetivo.id not in notificaciones_enviadas:
+                send_mail(
+                    'Tu Objetivo de Ahorro está por Vencer',
+                    f"Hola {request.user.first_name or request.user.username},\n\n"
+                    f"¡Atención! Tu objetivo '{objetivo.nombre}' está a punto de vencer el {objetivo.fecha_limite.strftime('%d/%m/%Y')}.\n\n"
+                    "Asegúrate de hacer tus últimos aportes para alcanzar tu meta.\n\n"
+                    "El equipo de EcoFinance",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [request.user.email]
+                )
+                notificaciones_enviadas.append(objetivo.id)
+        
+        request.session['notif_vencimiento_enviadas'] = notificaciones_enviadas
+
     # Generar transacciones recurrentes hasta hoy antes de mostrar el dashboard
     generar_transacciones_recurrentes(request.user, date.today(), date.today())
 
@@ -698,6 +735,25 @@ def nuevo_objetivo(request):
             objetivo.usuario = request.user
             objetivo.save()
             messages.success(request, f'¡Objetivo "{objetivo.nombre}" creado exitosamente!')
+
+            # --- Envío de correo al crear un nuevo objetivo ---
+            email_enabled = request.session.get('email_notifications', True)
+            goal_updates_enabled = request.session.get('goal_updates_notifications', False)
+
+            if email_enabled and goal_updates_enabled:
+                send_mail(
+                    'Has Creado un Nuevo Objetivo de Ahorro',
+                    (
+                        f"Hola {request.user.first_name or request.user.username},\n\n"
+                        f"Has creado un nuevo objetivo: '{objetivo.nombre}'.\n"
+                        f"Tu meta es alcanzar ${int(objetivo.monto_objetivo):,}".replace(',', '.') + f" antes del {objetivo.fecha_limite.strftime('%d/%m/%Y')}.\n\n"
+                        "¡Mucha suerte! Estamos aquí para ayudarte a lograrlo.\n\n"
+                        "El equipo de EcoFinance"
+                    ),
+                    settings.DEFAULT_FROM_EMAIL,
+                    [request.user.email]
+                )
+
             return redirect('lista_objetivos')
     else:
         form = ObjetivoForm(initial={'monto_actual': 0})
@@ -866,6 +922,11 @@ def establecer_balance_inicial(request):
 @login_required
 def añadir_dinero_objetivo(request, objetivo_id):
     objetivo = get_object_or_404(ObjetivoAhorro, id=objetivo_id, usuario=request.user)
+    user = request.user
+
+    # Verificar si las notificaciones están activadas en la sesión
+    email_enabled = request.session.get('email_notifications', True)
+    goal_updates_enabled = request.session.get('goal_updates_notifications', False)
 
     if request.method == 'POST':
         monto = request.POST.get('monto')
@@ -878,6 +939,9 @@ def añadir_dinero_objetivo(request, objetivo_id):
             if objetivo.monto_actual + monto > objetivo.monto_objetivo:
                 messages.warning(request, 'No puedes añadir más dinero del que falta para alcanzar el objetivo.')
                 return redirect('lista_objetivos')
+            
+            monto_previo = objetivo.monto_actual
+            estaba_completado = objetivo.completado
 
             # Crear una transacción de tipo "GASTO"
             Transaccion.objects.create(
@@ -893,7 +957,65 @@ def añadir_dinero_objetivo(request, objetivo_id):
             objetivo.monto_actual += monto
             objetivo.save()
 
-            messages.success(request, f'Se han añadido ${monto} al objetivo "{objetivo.nombre}".')
+            if not estaba_completado and objetivo.completado:
+                messages.success(request, f'¡Felicidades! Has completado tu objetivo "{objetivo.nombre}".')
+            else:
+                messages.success(request, f'Se han añadido ${int(monto):,}'.replace(',', '.') + f' al objetivo "{objetivo.nombre}".')
+
+            # --- Lógica de envío de correos ---
+            if email_enabled and goal_updates_enabled:
+                # 1. Correo de confirmación por añadir dinero (se envía siempre)
+                send_mail(
+                    'Aporte a tu Objetivo de Ahorro',
+                    f"Hola {user.first_name or user.username},\n\nHas añadido ${int(monto):,}".replace(',', '.') + f" a tu objetivo '{objetivo.nombre}'.\n¡Sigue así!",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email]
+                )
+
+                # 2. Correo si el objetivo se acaba de completar
+                if not estaba_completado and objetivo.completado:
+                    send_mail(
+                        '¡Has Cumplido tu Objetivo!',
+                        (
+                            f"Hola {user.first_name or user.username},\n\n¡EXTRAORDINARIO! Has alcanzado el 100% de tu objetivo de ahorro '{objetivo.nombre}'.\n"
+                            f"Has logrado tu meta de ${int(objetivo.monto_objetivo):,}".replace(',', '.') + ". ¡Estamos muy orgullosos de ti!\n\n"
+                            "El equipo de EcoFinance"
+                        ),
+                        settings.DEFAULT_FROM_EMAIL,
+                        [user.email]
+                    )
+                # 3. Correo si el objetivo está cerca de completarse (y no está ya completado)
+                elif not objetivo.completado:
+                    porcentaje_actual = (objetivo.monto_actual / objetivo.monto_objetivo) * 100
+                    porcentaje_previo = (monto_previo / objetivo.monto_objetivo) * 100
+
+                    if porcentaje_actual >= 90 and porcentaje_previo < 90:
+                        send_mail(
+                            '¡Casi cumples tu objetivo!',
+                            f"Hola {user.first_name or user.username},\n\n¡Felicidades! Estás a punto de alcanzar tu objetivo '{objetivo.nombre}'.\n"
+                            f"Has completado más del {porcentaje_actual:.0f}% de tu meta. ¡Ya casi lo tienes!",
+                            settings.DEFAULT_FROM_EMAIL,
+                            [user.email]
+                        )
+
+                # 4. Correo si la fecha límite está cerca (y no se ha enviado antes)
+                dias_restantes = (objetivo.fecha_limite - date.today()).days
+                notificacion_deadline_enviada = request.session.get(f'deadline_notified_{objetivo.id}', False)
+
+                if 0 <= dias_restantes < 10 and not notificacion_deadline_enviada and not objetivo.completado:
+                    send_mail(
+                        '¡Tu Objetivo Está por Vencer!',
+                        (
+                            f"Hola {user.first_name or user.username},\n\n"
+                            f"¡Atención! A tu objetivo '{objetivo.nombre}' le quedan solo {dias_restantes} día(s) para su fecha límite.\n\n"
+                            "¡No te rindas, estás muy cerca de lograrlo!\n\n"
+                            "El equipo de EcoFinance"
+                        ),
+                        settings.DEFAULT_FROM_EMAIL,
+                        [user.email]
+                    )
+                    request.session[f'deadline_notified_{objetivo.id}'] = True
+
         except (ValueError, InvalidOperation):
             messages.error(request, 'El monto ingresado no es válido.')
 
@@ -926,11 +1048,44 @@ def eliminar_dinero_objetivo(request, objetivo_id):
 @login_required
 def eliminar_objetivo(request, objetivo_id):
     objetivo = get_object_or_404(ObjetivoAhorro, id=objetivo_id, usuario=request.user)
+    
     if request.method == 'POST':
-        nombre = objetivo.nombre
+        nombre_objetivo = objetivo.nombre
+        user = request.user
+        
+        # Primero, preparamos el correo
+        email_enabled = request.session.get('notifications_email', False)
+        goal_updates_enabled = request.session.get('notifications_goals', False)
+
+        if email_enabled and goal_updates_enabled:
+            try:
+                send_mail(
+                    'Has Eliminado un Objetivo de Ahorro',
+                    (
+                        f"Hola {user.first_name or user.username},\n\n"
+                        f"Has eliminado tu objetivo de ahorro: '{nombre_objetivo}'.\n\n"
+                        "Si esto fue un error, puedes crear uno nuevo cuando quieras.\n\n"
+                        "El equipo de EcoFinance"
+                    ),
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=False  # Lo ponemos en False para depuración
+                )
+            except Exception as e:
+                # Si hay un error al enviar el correo, lo mostramos como un mensaje
+                messages.error(request, f"No se pudo enviar el correo de notificación. Error: {e}")
+        else:
+            # Mensaje de diagnóstico si las notificaciones están desactivadas
+            messages.warning(request, "El correo de notificación no se envió porque las notificaciones por correo para objetivos están desactivadas en tu perfil.")
+
+        # Ahora, eliminamos el objetivo
         objetivo.delete()
-        messages.success(request, f'El objetivo "{nombre}" ha sido eliminado correctamente.')
+        messages.success(request, f'El objetivo "{nombre_objetivo}" ha sido eliminado correctamente.')
+        
         return redirect('lista_objetivos')
+
+    # Si no es POST, simplemente renderizamos la página (aunque el modal se encarga)
+    # o redirigimos. La redirección es más segura.
     return redirect('lista_objetivos')
 
 @login_required
@@ -1107,33 +1262,129 @@ def eliminar_recurrente(request, serie_id):
 @login_required
 def perfil_usuario(request):
     if request.method == 'POST':
-        # Manejar la actualización del nombre
-        if 'nombre' in request.POST:
+        # Formulario para actualizar información personal
+        if 'update_profile' in request.POST:
             nombre = request.POST.get('nombre')
             if nombre:
                 request.user.first_name = nombre
                 request.user.save()
-                messages.success(request, 'Tu nombre ha sido actualizado.')
+                messages.success(request, 'Tu nombre ha sido actualizado correctamente.')
+            return redirect('perfil_usuario')
 
-        # Manejar el cambio de contraseña
-        password_actual = request.POST.get('password_actual')
-        password_nueva = request.POST.get('password_nueva')
-        password_confirmar = request.POST.get('password_confirmar')
+        # Formulario para cambiar la contraseña
+        elif 'update_password' in request.POST:
+            password_errors = []
+            password_actual = request.POST.get('password_actual')
+            password_nueva = request.POST.get('password_nueva')
+            password_confirmar = request.POST.get('password_confirmar')
+            user = request.user
 
-        if password_nueva:
-            if not request.user.check_password(password_actual):
-                messages.error(request, 'La contraseña actual es incorrecta.')
-            elif password_nueva != password_confirmar:
-                messages.error(request, 'Las nuevas contraseñas no coinciden.')
+            if not all([password_actual, password_nueva, password_confirmar]):
+                password_errors.append('Por favor, completa todos los campos.')
             else:
-                request.user.set_password(password_nueva)
-                request.user.save()
-                update_session_auth_hash(request, request.user)  # Importante para mantener la sesión
-                messages.success(request, 'Tu contraseña ha sido actualizada correctamente.')
-        
-        return redirect('perfil_usuario')
+                if not user.check_password(password_actual):
+                    password_errors.append('La contraseña actual es incorrecta.')
+                if password_nueva != password_confirmar:
+                    password_errors.append('Las nuevas contraseñas no coinciden.')
+                if password_actual == password_nueva:
+                    password_errors.append('La nueva contraseña no puede ser igual a la anterior.')
+                
+                try:
+                    validate_password(password_nueva, user=user)
+                except ValidationError as errors:
+                    password_errors.extend(list(errors))
 
-    return render(request, 'finanzas/perfil.html')
+            if password_errors:
+                return render(request, 'finanzas/perfil.html', {'password_errors': password_errors})
+
+            # Si todas las validaciones pasan, cambiar la contraseña
+            user.set_password(password_nueva)
+            user.save()
+            update_session_auth_hash(request, user)  # Mantener la sesión
+            messages.success(request, 'Tu contraseña ha sido actualizada correctamente.')
+            return redirect('perfil_usuario')
+            
+        # Formulario para preferencias de notificaciones
+        elif 'update_notifications' in request.POST:
+            # Obtener el estado anterior desde la sesión
+            old_email_pref = request.session.get('email_notifications', True)
+
+            # Obtener el nuevo estado desde el formulario
+            new_email_pref = request.POST.get('email_notifications') == 'on'
+            new_goal_pref = request.POST.get('goal_updates') == 'on'
+
+            # Guardar el nuevo estado en la sesión
+            request.session['email_notifications'] = new_email_pref
+            request.session['goal_updates_notifications'] = new_goal_pref
+
+            # Comprobar si el estado cambió para enviar correo
+            if new_email_pref and not old_email_pref:
+                # Enviar correo de activación
+                asunto = 'Notificaciones Activadas'
+                mensaje = f"Hola {request.user.first_name or request.user.username},\n\nHas activado las notificaciones por correo electrónico en EcoFinance."
+                send_mail(asunto, mensaje, settings.DEFAULT_FROM_EMAIL, [request.user.email])
+                messages.success(request, '¡Notificaciones activadas! Se ha enviado un correo de confirmación.')
+            elif not new_email_pref and old_email_pref:
+                # Enviar correo de desactivación
+                asunto = 'Notificaciones Desactivadas'
+                mensaje = f"Hola {request.user.first_name or request.user.username},\n\nHas desactivado las notificaciones por correo electrónico en EcoFinance."
+                send_mail(asunto, mensaje, settings.DEFAULT_FROM_EMAIL, [request.user.email])
+                messages.success(request, '¡Notificaciones desactivadas! Se ha enviado un correo de confirmación.')
+            else:
+                messages.success(request, 'Tus preferencias de notificación han sido guardadas.')
+
+            return redirect('perfil_usuario')
+
+        # Formulario para configuración de privacidad
+        elif 'update_privacy' in request.POST:
+            # Obtener el estado anterior desde la sesión
+            old_share_data = request.session.get('share_anonymous_data', True)
+            old_public_profile = request.session.get('public_profile', False)
+
+            # Obtener el nuevo estado desde el formulario
+            new_share_data = request.POST.get('share_anonymous_data') == 'on'
+            new_public_profile = request.POST.get('public_profile') == 'on'
+
+            # Guardar siempre el nuevo estado en la sesión
+            request.session['share_anonymous_data'] = new_share_data
+            request.session['public_profile'] = new_public_profile
+
+            # Comprobar si hubo cambios
+            if old_share_data == new_share_data and old_public_profile == new_public_profile:
+                messages.info(request, 'No se han detectado cambios en la configuración de privacidad.')
+            else:
+                # Si hubo cambios, y las notificaciones están activas, enviar correo
+                if request.session.get('email_notifications', True):
+                    send_mail(
+                        'Actualización de tu Configuración de Privacidad',
+                        (
+                            f"Hola {request.user.first_name or request.user.username},\n\n"
+                            "Tu configuración de privacidad en EcoFinance ha sido actualizada.\n\n"
+                            f" - Compartir datos anónimos: {'Activado' if new_share_data else 'Desactivado'}\n"
+                            f" - Perfil público: {'Activado' if new_public_profile else 'Desactivado'}\n\n"
+                            "El equipo de EcoFinance"
+                        ),
+                        settings.DEFAULT_FROM_EMAIL,
+                        [request.user.email]
+                    )
+                    messages.success(request, 'Configuración de privacidad guardada. Se ha enviado un correo de confirmación.')
+                else:
+                    messages.success(request, 'Tu configuración de privacidad ha sido guardada.')
+            
+            return redirect('perfil_usuario')
+
+    # Para peticiones GET, pasar el estado de la sesión a la plantilla
+    context = {
+        'notification_prefs': {
+            'email_notifications': request.session.get('email_notifications', True),
+            'goal_updates_notifications': request.session.get('goal_updates_notifications', False)
+        },
+        'privacy_prefs': {
+            'share_anonymous_data': request.session.get('share_anonymous_data', True),
+            'public_profile': request.session.get('public_profile', False)
+        }
+    }
+    return render(request, 'finanzas/perfil.html', context)
 
 def enviar_notificacion_transacciones(usuario):
     # Obtener el mes y año actuales

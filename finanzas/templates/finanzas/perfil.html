@@ -63,6 +63,17 @@
                         <div class="profile-card-body">
                             <form method="post" action="{% url 'perfil_usuario' %}">
                                 {% csrf_token %}
+                                
+                                {% if password_errors %}
+                                <div class="alert alert-danger mb-3">
+                                    <ul class="mb-0">
+                                        {% for error in password_errors %}
+                                        <li>{{ error }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+
                                 <div class="mb-3">
                                     <label for="password_actual" class="form-label">Contraseña actual</label>
                                     <div class="input-group">
@@ -125,19 +136,20 @@
                     <h5>Configuración de Privacidad</h5>
                 </div>
                 <div class="profile-card-body">
-                    <form>
+                    <form method="post" action="{% url 'perfil_usuario' %}">
+                        {% csrf_token %}
                         <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="share_anonymous_data" name="share_anonymous_data" checked>
+                            <input class="form-check-input" type="checkbox" id="share_anonymous_data" name="share_anonymous_data" {% if privacy_prefs.share_anonymous_data %}checked{% endif %}>
                             <label class="form-check-label" for="share_anonymous_data">Compartir datos anónimos para mejorar el servicio</label>
                             <small class="d-block text-muted">Por defecto: Activado.</small>
                         </div>
                         <div class="form-check form-switch mb-4">
-                            <input class="form-check-input" type="checkbox" id="public_profile" name="public_profile">
+                            <input class="form-check-input" type="checkbox" id="public_profile" name="public_profile" {% if privacy_prefs.public_profile %}checked{% endif %}>
                             <label class="form-check-label" for="public_profile">Perfil público</label>
                             <small class="d-block text-muted">Por defecto: Desactivado.</small>
                         </div>
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary" disabled>
+                            <button type="submit" name="update_privacy" class="btn btn-primary">
                                 <i class="fas fa-lock me-2"></i>Guardar Privacidad
                             </button>
                         </div>
@@ -151,18 +163,22 @@
                     <h5>Preferencias de Notificaciones</h5>
                 </div>
                 <div class="profile-card-body">
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="email_notifications" checked disabled>
-                        <label class="form-check-label" for="email_notifications">Notificaciones por correo electrónico</label>
-                    </div>
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="payment_reminders" checked disabled>
-                        <label class="form-check-label" for="payment_reminders">Recordatorios de pagos</label>
-                    </div>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="goal_updates" disabled>
-                        <label class="form-check-label" for="goal_updates">Actualizaciones de objetivos</label>
-                    </div>
+                    <form method="post" action="{% url 'perfil_usuario' %}">
+                        {% csrf_token %}
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" {% if notification_prefs.email_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="email_notifications">Notificaciones por correo electrónico</label>
+                        </div>
+                        <div class="form-check form-switch mb-4">
+                            <input class="form-check-input" type="checkbox" id="goal_updates" name="goal_updates" {% if notification_prefs.goal_updates_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="goal_updates">Actualizaciones de objetivos</label>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" name="update_notifications" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -193,4 +209,29 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emailNotificationsSwitch = document.getElementById('email_notifications');
+    const goalUpdatesSwitch = document.getElementById('goal_updates');
+
+    function toggleGoalUpdates() {
+        if (emailNotificationsSwitch.checked) {
+            goalUpdatesSwitch.disabled = false;
+        } else {
+            goalUpdatesSwitch.disabled = true;
+            goalUpdatesSwitch.checked = false;
+        }
+    }
+
+    // Ejecutar al cargar la página
+    toggleGoalUpdates();
+
+    // Añadir listener para cambios
+    emailNotificationsSwitch.addEventListener('change', toggleGoalUpdates);
+});
+</script>
+{% endblock %}
+
 {% endblock %} 
