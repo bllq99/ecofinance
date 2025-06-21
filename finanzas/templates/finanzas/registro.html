@@ -23,7 +23,7 @@
                             {% csrf_token %}
                             <div class="mb-3">
                                 <label for="nombre" class="form-label">Nombre</label>
-                                <input type="text" class="form-control" id="nombre" name="first_name" required>
+                                <input type="text" class="form-control" id="nombre" name="nombre" required>
                             </div>
                             <div class="mb-3">
                                 <label for="email" class="form-label">Correo electrónico</label>
@@ -31,13 +31,13 @@
                             </div>
                             <div class="mb-3">
                                 <label for="password1" class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" id="password1" name="password" required>
+                                <input type="password" class="form-control" id="password1" name="password1" required>
                             </div>
                             <div class="mb-3">
                                 <label for="password2" class="form-label">Confirmar contraseña</label>
                                 <input type="password" class="form-control" id="password2" name="password2" required>
                             </div>
-                            {% if form.errors %}
+                            {% if error %}
                             <div class="alert alert-danger" role="alert">
                                 {% for field, errors in form.errors.items %}
                                     {% for error in errors %}
